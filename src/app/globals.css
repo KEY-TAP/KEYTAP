@@ -1,42 +1,157 @@
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand */
+  --color-primary: #5a7d9a;
+  --color-secondary: #79adc1;
+
+  /* Neutral (white ~ grey ~ black) */
+  --color-white: #ffffff;
+  --color-grey-100: #e8e8e8;
+  --color-grey-200: #d9d9d9;
+  --color-grey-300: #c9c9c9;
+  --color-grey-600: #777777;
+  --color-grey-800: #333333;
+  --color-black: #000000;
+
+  /* Typography (next/font에서 variable로 주입되는 걸 기대)
+     - layout.tsx body className에 font.variable 넣으면 아래 변수들이 살아남
+     - 예: --font-inter, --font-mono, --font-d2
+  */
+  --font-base: var(--font-inter);
+  --font-mono: var(--font-mono);
+  --font-code: var(--font-d2);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
+/* =========================
+   Base Reset
+   ========================= */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
-  padding: 0;
+}
+
+html {
+  width: 100%;
+  font-size: 18px;
+}
+
+body {
+  width: 100%;
+  min-width: 320px;
   margin: 0;
+
+  color: var(--color-grey-800);
+  background: var(--color-white);
+
+  font-weight: 400;
+  font-size: 1rem;
+  line-height: 150%;
+  letter-spacing: -0.64px;
+
+  /* 기본 폰트(Inter) */
+  font-family:
+    var(--font-base),
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+
+  word-break: keep-all;
+  -webkit-text-size-adjust: none;
+}
+
+/* reset */
+ul,
+ol,
+li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 a {
-  color: inherit;
+  cursor: pointer;
   text-decoration: none;
+  color: inherit;
+  transition: all 0.7s cubic-bezier(0.215, 0.61, 0.355, 1);
 }
 
-@media (prefers-color-scheme: dark) {
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9375rem;
+}
+
+table caption {
+  overflow: hidden;
+  font-size: 0;
+  line-height: 0;
+}
+
+address {
+  font-style: normal;
+}
+
+hr {
+  display: none;
+}
+
+/* focus outline 제거(필요 시) */
+input:focus,
+textarea:focus,
+button:focus {
+  outline: none;
+}
+
+/* placeholder */
+input::placeholder,
+textarea::placeholder {
+  color: #999;
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+input[type="text"]::-ms-clear {
+  display: none;
+}
+
+/* code 계열 폰트 */
+code,
+pre,
+kbd,
+samp {
+  font-family:
+    var(--font-mono), var(--font-code), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}
+
+/* ===== breakpoint 기반 반응형 ===== */
+/* md 이하 (≤980) */
+@media (max-width: 980px) {
   html {
-    color-scheme: dark;
+    font-size: 16px;
+    letter-spacing: -0.54px;
+  }
+}
+
+/* sm 이하 (≤680) */
+@media (max-width: 680px) {
+  html {
+    font-size: 14px;
+  }
+
+  body {
+    line-height: 120%;
+  }
+
+  /* input/textarea에서만 자동 확대 방지 */
+  input,
+  textarea {
+    text-size-adjust: none;
+    -webkit-text-size-adjust: none;
   }
 }
