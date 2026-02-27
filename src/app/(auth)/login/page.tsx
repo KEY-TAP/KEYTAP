@@ -1,6 +1,7 @@
 // 로그인페이지
 
-import { Metadata } from "next";
+import type { Metadata } from "next";
+import LoginForm from "./_component/LoginForm";
 
 export const metadata: Metadata = {
   title: "로그인 - Keytap",
@@ -9,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function Login() {
-  return <div>로그인페이지</div>;
+  return <LoginForm />;
 }
