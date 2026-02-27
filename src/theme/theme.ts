@@ -3,8 +3,8 @@ import { createTheme } from "@mui/material/styles";
 
 const COLORS = {
   // Brand
-  primary: "#5A7D9A",
-  secondary: "#79ADC1",
+  primary: "#112F78",
+  secondary: "#E8E9F2",
 
   // Neutral (white ~ grey ~ black)
   white: "#FFFFFF",
@@ -25,6 +25,7 @@ const COLORS = {
  *
  * theme에서는 CSS 변수 기반으로 지정해두면 관리가 편함.
  */
+
 const FONT_BASE =
   'var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
 
@@ -46,7 +47,7 @@ const baseTheme = createTheme({
 
     background: {
       default: COLORS.white,
-      paper: COLORS.white,
+      paper: COLORS.secondary,
     },
 
     text: {
@@ -58,11 +59,11 @@ const baseTheme = createTheme({
 
     grey: {
       50: COLORS.white,
-      100: COLORS.grey100,
-      200: COLORS.grey200,
-      300: COLORS.grey300,
-      600: COLORS.grey600,
-      800: COLORS.grey800,
+      100: COLORS.grey100, // E8E8E8
+      200: COLORS.grey200, // D9D9D9
+      300: COLORS.grey300, // C9C9C9
+      600: COLORS.grey600, // 777777
+      800: COLORS.grey800, // 333333
       900: COLORS.black,
     },
   },
@@ -73,23 +74,19 @@ const baseTheme = createTheme({
     h1: {
       fontWeight: 700,
       fontSize: "3rem",
-      color: COLORS.grey800,
       letterSpacing: "-0.02em",
     },
     h2: {
       fontWeight: 700,
       fontSize: "1.5rem",
-      color: COLORS.grey800,
       letterSpacing: "-0.02em",
     },
     body1: {
       fontSize: "1rem",
-      color: COLORS.grey800,
     },
     subtitle1: {
       fontSize: "1.111rem",
       marginTop: "16px",
-      color: COLORS.grey600,
     },
   },
 });
@@ -100,7 +97,7 @@ const theme = createTheme(baseTheme, {
       styleOverrides: {
         "*, *::before, *::after": { boxSizing: "border-box" },
 
-        html: { width: "100%", fontSize: "18px" },
+        html: { width: "100%", fontSize: "16px" },
 
         body: {
           width: "100%",
@@ -177,6 +174,7 @@ const theme = createTheme(baseTheme, {
           textTransform: "none",
           borderRadius: 12,
           fontWeight: 600,
+          transition: "all .3s ease",
         },
         containedPrimary: {
           color: COLORS.white,
