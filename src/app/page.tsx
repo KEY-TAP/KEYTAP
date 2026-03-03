@@ -1,3 +1,22 @@
+"use client";
+import { supabase } from "@/lib/supabaseClient";
+
 export default function Home() {
-  return <div>랜딩페이지</div>;
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+    });
+
+    if (error) {
+      console.error(error);
+    }
+  };
+
+  return (
+    <div>
+      <div>랜딩페이지</div>
+      <h1>KEYTAP</h1>
+      <button onClick={handleGoogleLogin}>Google로 로그인</button>
+    </div>
+  );
 }
