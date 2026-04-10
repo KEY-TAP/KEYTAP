@@ -22,19 +22,41 @@ gsap.registerPlugin(useGSAP);
 const LandingPage = () => {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const imageWrapRef = useRef<HTMLDivElement | null>(null);
+  const firstRowRef = useRef<HTMLDivElement | null>(null);
 
   useGSAP(
     () => {
       const wrap = imageWrapRef.current;
-      if (!wrap) return;
+      const firstRow = firstRowRef.current;
 
-      // 무한 플로우
-      const marqueeTween = gsap.to(wrap, {
-        xPercent: -50,
-        duration: 20,
-        ease: "none",
-        repeat: -1,
-      });
+      if (!wrap || !firstRow) return;
+
+      let marqueeTween: gsap.core.Tween | null = null;
+
+      const createMarquee = () => {
+        const singleWidth = firstRow.offsetWidth;
+        if (!singleWidth) return;
+
+        if (marqueeTween) {
+          marqueeTween.kill();
+          gsap.set(wrap, { x: 0 });
+        }
+
+        marqueeTween = gsap.to(wrap, {
+          x: -singleWidth,
+          duration: 20,
+          ease: "none",
+          repeat: -1,
+        });
+      };
+
+      createMarquee();
+
+      const handleResize = () => {
+        createMarquee();
+      };
+
+      window.addEventListener("resize", handleResize);
 
       const hoverItems = gsap.utils.toArray<HTMLElement>(".hover");
       const cleanups: Array<() => void> = [];
@@ -57,11 +79,9 @@ const LandingPage = () => {
           const tooltipWidth = text.offsetWidth;
           const tooltipHeight = text.offsetHeight;
 
-          // 커서 기준 기본 위치
           let x = clientX - rect.left;
           let y = clientY - rect.top;
 
-          // hover 박스 안에서만 보이도록 범위 제한
           const minX = tooltipWidth / 2;
           const maxX = rect.width - tooltipWidth / 2;
 
@@ -108,9 +128,17 @@ const LandingPage = () => {
           });
         };
 
+        const pauseMarquee = () => {
+          marqueeTween?.pause();
+        };
+
+        const resumeMarquee = () => {
+          marqueeTween?.resume();
+        };
+
         // PC
         const handleMouseEnter = (e: MouseEvent) => {
-          marqueeTween.pause();
+          pauseMarquee();
           showTextAt(e.clientX, e.clientY);
         };
 
@@ -120,7 +148,7 @@ const LandingPage = () => {
 
         const handleMouseLeave = () => {
           hideText();
-          marqueeTween.resume();
+          resumeMarquee();
         };
 
         // Mobile
@@ -128,7 +156,7 @@ const LandingPage = () => {
           const touch = e.touches[0];
           if (!touch) return;
 
-          marqueeTween.pause();
+          pauseMarquee();
           showTextAt(touch.clientX, touch.clientY);
         };
 
@@ -141,7 +169,7 @@ const LandingPage = () => {
 
         const handleTouchEnd = () => {
           hideText();
-          marqueeTween.resume();
+          resumeMarquee();
         };
 
         item.addEventListener("mouseenter", handleMouseEnter);
@@ -166,7 +194,8 @@ const LandingPage = () => {
       });
 
       return () => {
-        marqueeTween.kill();
+        marqueeTween?.kill();
+        window.removeEventListener("resize", handleResize);
         cleanups.forEach((cleanup) => cleanup());
       };
     },
@@ -177,7 +206,7 @@ const LandingPage = () => {
     <LandingWrapper ref={rootRef}>
       <FlowArea>
         <ImageWrap ref={imageWrapRef}>
-          <FlowRow>
+          <FlowRow ref={firstRowRef}>
             <div className="hover">
               <Image src={keyboard01h} alt="키보드이미지" className="bubble" />
               <p>NUPHY KICK75</p>
@@ -261,19 +290,31 @@ const ExamText = styled("p")(({ theme }) => ({
 }));
 
 const FlowRow = styled("div")(({ theme }) => ({
-  width: "100vw",
+  minWidth: "max-content",
   height: "100vh",
   display: "flex",
   flexShrink: 0,
+  gap: "80px",
+  paddingRight: "80px",
+
+  [theme.breakpoints.down("md")]: {
+    gap: "40px",
+    paddingRight: "40px",
+  },
 
   "& > div": {
     display: "flex",
     flexDirection: "column",
+    flexShrink: 0,
 
     "&:first-of-type": {
       "& img:first-of-type": {
         [theme.breakpoints.down("md")]: {
           width: "670px",
+        },
+
+        [theme.breakpoints.down("sm")]: {
+          width: "520px",
         },
       },
       "& img:last-of-type": {
@@ -284,12 +325,17 @@ const FlowRow = styled("div")(({ theme }) => ({
           width: "360px",
           marginTop: "-180px",
         },
+        [theme.breakpoints.down("sm")]: {
+          width: "260px",
+          marginTop: "-120px",
+        },
       },
     },
 
     "&:nth-of-type(2)": {
       justifyContent: "space-between",
       margin: "40px 0",
+      flexShrink: 0,
     },
 
     "&:last-of-type": {
@@ -300,6 +346,12 @@ const FlowRow = styled("div")(({ theme }) => ({
 
         [theme.breakpoints.down("md")]: {
           width: "140px",
+          marginRight: "60px",
+        },
+        [theme.breakpoints.down("sm")]: {
+          width: "110px",
+          marginRight: "20px",
+          marginTop: "120px",
         },
       },
       "& img:last-of-type": {
@@ -309,12 +361,18 @@ const FlowRow = styled("div")(({ theme }) => ({
           width: "610px",
           marginTop: "-90px",
         },
+        [theme.breakpoints.down("sm")]: {
+          width: "500px",
+          marginTop: "-50px",
+        },
       },
     },
 
     "& img": {
       height: "auto",
       objectFit: "cover",
+      flexShrink: 0,
+      maxWidth: "none",
     },
   },
 
