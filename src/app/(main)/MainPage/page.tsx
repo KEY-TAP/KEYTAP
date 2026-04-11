@@ -1,7 +1,7 @@
 // 메인페이지
 
 import { Metadata } from "next";
-import MainComponents from "../main/_component/MainComponents";
+import MainComponent from "./_component/MainComponents";
 
 export const metadata: Metadata = {
   title: "메인페이지 - Keytap",
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function MainPage() {
   return (
     <div>
-      <MainComponents />
+      <MainComponent />
     </div>
   );
 }
