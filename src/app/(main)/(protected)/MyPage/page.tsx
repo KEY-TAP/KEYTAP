@@ -1,6 +1,7 @@
 // 마이페이지
 
 import { Metadata } from "next";
+import ProfileForm from "./_component/ProfileForm";
 
 export const metadata: Metadata = {
   title: "마이페이지 - Keytap",
@@ -9,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function MyPage() {
-  return <div>마이페이지</div>;
+  return <ProfileForm />;
 }

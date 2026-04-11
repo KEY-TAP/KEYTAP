@@ -30,19 +30,13 @@ export default function Footer() {
 
           <OwnerWrap>
             <li>
-              <a href="#" onClick={handleComingSoon}>
-                황수곤
-              </a>
+              <a>황수곤</a>
             </li>
             <li>
-              <a href="#" onClick={handleComingSoon}>
-                안윤희
-              </a>
+              <a>안윤희</a>
             </li>
             <li>
-              <a href="#" onClick={handleComingSoon}>
-                양원지
-              </a>
+              <a>양원지</a>
             </li>
           </OwnerWrap>
 
@@ -77,15 +71,29 @@ const FooterWrap = styled("footer")(({ theme }) => ({
   background: theme.palette.background.paper,
   padding: "40px 10% 52px",
   boxSizing: "border-box",
+
+  [theme.breakpoints.down("md")]: {
+    padding: "30px 10% 45px",
+  },
+
+  [theme.breakpoints.down("sm")]: {
+    padding: "26px 5% 36px",
+  },
 }));
 
-const FooterInner = styled("div")(() => ({
+const FooterInner = styled("div")(({ theme }) => ({
   margin: "0 auto",
   display: "flex",
   justifyContent: "space-between",
+
+  [theme.breakpoints.down("md")]: {},
+
+  [theme.breakpoints.down("sm")]: {
+    flexDirection: "column",
+  },
 }));
 
-const LeftWrap = styled("div")(() => ({
+const LeftWrap = styled("div")(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
 
@@ -97,6 +105,23 @@ const LeftWrap = styled("div")(() => ({
     height: "auto",
 
     marginBottom: "12px",
+  },
+
+  [theme.breakpoints.down("md")]: {
+    gap: "20px",
+
+    "& img": {
+      maxWidth: "120px",
+    },
+  },
+
+  [theme.breakpoints.down("sm")]: {
+    gap: "18px",
+
+    "& img": {
+      maxWidth: "100px",
+      marginBottom: "10px",
+    },
   },
 }));
 
@@ -135,6 +160,36 @@ const OwnerWrap = styled("ul")(({ theme }) => ({
   "& a:hover": {
     color: theme.palette.primary.main,
   },
+
+  [theme.breakpoints.down("md")]: {
+    "& li": {
+      paddingRight: "15px",
+    },
+
+    "& li + li::before": {
+      height: "13px",
+      left: "-7px",
+    },
+
+    "& a": {
+      fontSize: "14px",
+    },
+  },
+
+  [theme.breakpoints.down("sm")]: {
+    "& li": {
+      paddingRight: "13px",
+    },
+
+    "& li + li::before": {
+      height: "12px",
+      left: "-6px",
+    },
+
+    "& a": {
+      fontSize: "13px",
+    },
+  },
 }));
 
 const CopyWrap = styled("div")(({ theme }) => ({
@@ -146,4 +201,19 @@ const CopyWrap = styled("div")(({ theme }) => ({
 const RightWrap = styled("ul")(({ theme }) => ({
   display: "flex",
   gap: "24px",
+
+  [theme.breakpoints.down("md")]: {
+    gap: "20px",
+  },
+
+  [theme.breakpoints.down("sm")]: {
+    gap: "16px",
+
+    marginTop: "16px",
+
+    "& img": {
+      width: "20px",
+      height: "20px",
+    },
+  },
 }));

@@ -1,6 +1,7 @@
 // 찜목록
 
 import { Metadata } from "next";
+import FavoriteList from "./_component/FavoriteList";
 
 export const metadata: Metadata = {
   title: "찜목록 - Keytap",
@@ -9,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function WishList() {
-  return <div>찜목록</div>;
+  return <FavoriteList />;
 }

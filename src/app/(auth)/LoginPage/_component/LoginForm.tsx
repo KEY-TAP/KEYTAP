@@ -14,6 +14,7 @@ import IconButton from "@mui/material/IconButton";
 // mui-icons
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import GoogleIcon from "@/common/icons/googleIcon";
 
 export default function LoginForm() {
   const [showPw, setShowPw] = useState(false);
@@ -88,15 +89,20 @@ export default function LoginForm() {
           <span>회원가입</span>
         </SignUpButton>
 
-        <SignUpWithGoogle
+        <LoginWithGoogle
           type="button"
           onClick={comingSoon}
           fullWidth
           variant="outlined"
           color="inherit"
         >
-          구글로 회원가입하기
-        </SignUpWithGoogle>
+          <i>
+            <GoogleIcon />
+          </i>
+          <p>
+            <strong>Google</strong> 계정으로 로그인
+          </p>
+        </LoginWithGoogle>
       </Form>
     </Wrap>
   );
@@ -196,92 +202,27 @@ const ForgotPassword = styled("button")(({ theme }) => ({
 }));
 
 const LoginButton = styled(Button)(({ theme }) => ({
-  position: "relative",
-  overflow: "hidden",
+  marginTop: "16px",
   height: "48px",
   fontSize: "1.125rem",
   fontWeight: 500,
   border: `1px solid ${theme.palette.primary.main}`,
   borderRadius: "5px",
 
-  transition: "color .3s ease",
+  transition: "all .3s ease",
   boxShadow: "none",
-
-  "&::before": {
-    content: '""',
-    position: "absolute",
-    inset: 0,
-    background: theme.palette.background.default,
-    transform: "scaleX(0)",
-    transformOrigin: "left",
-    transition: "transform .4s ease",
-    zIndex: 0,
-  },
-
-  "& span": {
-    position: "relative",
-    zIndex: 1,
-    transition: "all .3s ease",
-  },
+  color: theme.palette.background.default,
 
   "&:hover": {
-    boxShadow: "none !important",
-  },
+    boxShadow: "none",
 
-  "&:hover span": {
+    transition: "all .3s ease",
+    background: theme.palette.background.default,
     color: theme.palette.primary.main,
-  },
-
-  "&:hover::before": {
-    transform: "scaleX(1)",
   },
 }));
 
 const SignUpButton = styled(Button)(({ theme }) => ({
-  position: "relative",
-  marginTop: "16px",
-  overflow: "hidden",
-  height: "48px",
-  fontSize: "1.125rem",
-  fontWeight: 500,
-  border: `1px solid ${theme.palette.grey[200]}`,
-  borderRadius: "5px",
-
-  transition: "color .3s ease",
-  boxShadow: "none",
-
-  "&::before": {
-    content: '""',
-    position: "absolute",
-    inset: 0,
-    background: theme.palette.primary.main,
-    transform: "scaleX(0)",
-    transformOrigin: "left",
-    transition: "transform .4s ease",
-    zIndex: 0,
-  },
-
-  "& span": {
-    position: "relative",
-    zIndex: 1,
-    transition: "all .3s ease",
-    color: theme.palette.grey[600],
-  },
-
-  "&:hover": {
-    boxShadow: "none !important",
-  },
-
-  "&:hover span": {
-    color: theme.palette.background.default,
-  },
-
-  "&:hover::before": {
-    transform: "scaleX(1)",
-  },
-}));
-
-const SignUpWithGoogle = styled(Button)(({ theme }) => ({
   marginTop: "16px",
   height: "48px",
   fontSize: "1.125rem",
@@ -289,15 +230,109 @@ const SignUpWithGoogle = styled(Button)(({ theme }) => ({
   border: `1px solid ${theme.palette.grey[200]}`,
   borderRadius: "5px",
 
-  transition: "color .3s ease",
+  transition: "all .3s ease",
   boxShadow: "none",
   color: theme.palette.grey[600],
 
   "&:hover": {
     boxShadow: "none",
 
-    transition: "color .3s ease",
+    transition: "all .3s ease",
     background: theme.palette.primary.main,
     color: theme.palette.background.default,
   },
 }));
+
+const LoginWithGoogle = styled(Button)(({ theme }) => ({
+  marginTop: "16px",
+  height: "48px",
+
+  border: `1px solid ${theme.palette.primary.main}`,
+  background: theme.palette.primary.main,
+  borderRadius: "5px",
+
+  transition: "all .3s ease",
+  boxShadow: "none",
+
+  display: "flex",
+  gap: "10px",
+  alignItems: "center",
+
+  "& i": {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "30px",
+    height: "30px",
+    borderRadius: "100%",
+    transition: "all .3s ease",
+    background: theme.palette.background.default,
+
+    "& svg": {
+      width: "26px",
+      height: "26px",
+    },
+  },
+
+  "& p": {
+    fontSize: "1rem",
+    color: theme.palette.background.default,
+    fontWeight: 400,
+    position: "relative",
+    transition: "all .3s ease",
+    zIndex: "999",
+  },
+
+  "&:hover": {
+    transition: "all .3s ease",
+    border: `1px solid ${theme.palette.grey[200]}`,
+    background: theme.palette.background.default,
+
+    "& p": {
+      color: theme.palette.primary.main,
+      transform: "scale(100%)",
+    },
+  },
+}));
+
+// const LoginButton = styled(Button)(({ theme }) => ({
+//   position: "relative",
+//   overflow: "hidden",
+//   height: "48px",
+//   fontSize: "1.125rem",
+//   fontWeight: 500,
+//   border: `1px solid ${theme.palette.primary.main}`,
+//   borderRadius: "5px",
+
+//   transition: "color .3s ease",
+//   boxShadow: "none",
+
+//   "&::before": {
+//     content: '""',
+//     position: "absolute",
+//     inset: 0,
+//     background: theme.palette.background.default,
+//     transform: "scaleX(0)",
+//     transformOrigin: "left",
+//     transition: "transform .4s ease",
+//     zIndex: 0,
+//   },
+
+//   "& span": {
+//     position: "relative",
+//     zIndex: 1,
+//     transition: "all .3s ease",
+//   },
+
+//   "&:hover": {
+//     boxShadow: "none !important",
+//   },
+
+//   "&:hover span": {
+//     color: theme.palette.primary.main,
+//   },
+
+//   "&:hover::before": {
+//     transform: "scaleX(1)",
+//   },
+// }));

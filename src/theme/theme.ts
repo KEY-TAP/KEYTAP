@@ -11,7 +11,9 @@ const COLORS = {
   grey100: "#E8E8E8",
   grey200: "#D9D9D9",
   grey300: "#C9C9C9",
+  grey500: "#999999",
   grey600: "#777777",
+  grey700: "#555555",
   grey800: "#333333",
   black: "#000000",
 };
@@ -62,7 +64,9 @@ const baseTheme = createTheme({
       100: COLORS.grey100, // E8E8E8
       200: COLORS.grey200, // D9D9D9
       300: COLORS.grey300, // C9C9C9
+      500: COLORS.grey500, // 999999
       600: COLORS.grey600, // 777777
+      700: COLORS.grey700, // 555555
       800: COLORS.grey800, // 333333
       900: COLORS.black,
     },
