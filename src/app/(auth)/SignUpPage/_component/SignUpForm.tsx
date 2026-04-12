@@ -21,12 +21,46 @@ export default function SignUpForm() {
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
 
+  const [agreements, setAgreements] = useState({
+    agreeAll: false,
+    agreeTerms: false,
+    agreePrivacy: false,
+    agreeMarketing: false,
+  });
+
   const onSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
     alert("준비중입니다.");
   };
 
   const comingSoon = () => alert("준비중입니다.");
+
+  const handleAgreeAllChange = (checked: boolean) => {
+    setAgreements({
+      agreeAll: checked,
+      agreeTerms: checked,
+      agreePrivacy: checked,
+      agreeMarketing: checked,
+    });
+  };
+
+  const handleAgreeItemChange = (
+    name: "agreeTerms" | "agreePrivacy" | "agreeMarketing",
+    checked: boolean,
+  ) => {
+    const nextAgreements = {
+      ...agreements,
+      [name]: checked,
+    };
+
+    const isAllChecked =
+      nextAgreements.agreeTerms && nextAgreements.agreePrivacy && nextAgreements.agreeMarketing;
+
+    setAgreements({
+      ...nextAgreements,
+      agreeAll: isAllChecked,
+    });
+  };
 
   return (
     <Wrap aria-label="회원가입 폼">
@@ -126,17 +160,19 @@ export default function SignUpForm() {
         <Field>
           <Label htmlFor="signup-phone">연락처</Label>
           <InputWrap>
-            <InputField
-              id="signup-phone"
-              name="phone"
-              autoComplete="tel"
-              fullWidth
-              placeholder="휴대폰 번호를 인증해주세요."
-              size="small"
-            />
-            <VerifyButton type="button" variant="contained" onClick={comingSoon}>
-              인증하기
-            </VerifyButton>
+            <Row>
+              <InputField
+                id="signup-phone"
+                name="phone"
+                autoComplete="tel"
+                fullWidth
+                placeholder="휴대폰 번호를 인증해주세요."
+                size="small"
+              />
+              <VerifyButton type="button" variant="contained" onClick={comingSoon}>
+                인증하기
+              </VerifyButton>
+            </Row>
           </InputWrap>
         </Field>
 
@@ -161,28 +197,65 @@ export default function SignUpForm() {
         <AgreeArea>
           <AgreeLabel as="div">약관동의</AgreeLabel>
 
-          <div>
-            <FormControlLabel
-              control={<Checkbox name="agreeAll" />}
+          <AgreeCheckbox>
+            <StyledFormControlLabel
+              isAll
+              checked={agreements.agreeAll}
+              control={
+                <Checkbox
+                  icon={<CircleIcon />}
+                  checkedIcon={<CircleCheckedIcon />}
+                  name="agreeAll"
+                  checked={agreements.agreeAll}
+                  onChange={(e) => handleAgreeAllChange(e.target.checked)}
+                />
+              }
               label="이용약관 및 개인정보 수집 및 이용, 쇼핑정보 수신에 모두 동의합니다."
             />
-            <FormControlLabel
-              control={<Checkbox name="agreeTerms" />}
+            <StyledFormControlLabel
+              checked={agreements.agreeTerms}
+              control={
+                <Checkbox
+                  icon={<CircleIcon />}
+                  checkedIcon={<CircleCheckedIcon />}
+                  name="agreeTerms"
+                  checked={agreements.agreeTerms}
+                  onChange={(e) => handleAgreeItemChange("agreeTerms", e.target.checked)}
+                />
+              }
               label="[필수] 이용약관 동의"
             />
-            <FormControlLabel
-              control={<Checkbox name="agreePrivacy" />}
+            <StyledFormControlLabel
+              checked={agreements.agreePrivacy}
+              control={
+                <Checkbox
+                  icon={<CircleIcon />}
+                  checkedIcon={<CircleCheckedIcon />}
+                  name="agreePrivacy"
+                  checked={agreements.agreePrivacy}
+                  onChange={(e) => handleAgreeItemChange("agreePrivacy", e.target.checked)}
+                />
+              }
               label="[필수] 개인정보 수집 및 이용 동의"
             />
-            <FormControlLabel
-              control={<Checkbox name="agreeMarketing" />}
+            <StyledFormControlLabel
+              checked={agreements.agreeMarketing}
+              control={
+                <Checkbox
+                  icon={<CircleIcon />}
+                  checkedIcon={<CircleCheckedIcon />}
+                  name="agreeMarketing"
+                  checked={agreements.agreeMarketing}
+                  onChange={(e) => handleAgreeItemChange("agreeMarketing", e.target.checked)}
+                />
+              }
               label="[선택] 광고정보 수신 동의"
             />
-          </div>
+          </AgreeCheckbox>
         </AgreeArea>
 
         <SubmitButton type="submit" fullWidth variant="contained">
-          <span>가입하기</span>
+          가입하기
         </SubmitButton>
       </Form>
     </Wrap>
@@ -210,18 +283,38 @@ const Form = styled("form")(() => ({
   display: "block",
 }));
 
-const Title = styled(Typography)(() => ({
+const Title = styled(Typography)(({ theme }) => ({
   fontWeight: 500,
   fontSize: "2rem",
   marginBottom: "40px",
+
+  [theme.breakpoints.down("md")]: {
+    marginBottom: "30px",
+    fontSize: "1.75rem",
+  },
+
+  [theme.breakpoints.down("sm")]: {
+    marginBottom: "20px",
+    fontSize: "1.3rem",
+  },
 }));
 
-const Field = styled(Box)(() => ({
+const Field = styled(Box)(({ theme }) => ({
   textAlign: "left",
   marginBottom: "25px",
 
   display: "flex",
   alignItems: "center",
+
+  [theme.breakpoints.down("md")]: {
+    marginBottom: "20px",
+  },
+
+  [theme.breakpoints.down("sm")]: {
+    gap: "12px",
+    flexDirection: "column",
+    alignItems: "flex-start",
+  },
 }));
 
 const Label = styled("label")(({ theme }) => ({
@@ -233,17 +326,26 @@ const Label = styled("label")(({ theme }) => ({
   color: theme.palette.grey[800],
 }));
 
-const InputWrap = styled("div")(() => ({
+const InputWrap = styled("div")(({ theme }) => ({
   width: "calc(100% - 125px)",
   display: "flex",
   flexWrap: "wrap",
   gap: "12px",
+
+  [theme.breakpoints.down("md")]: {
+    width: "100%",
+  },
+
+  [theme.breakpoints.down("sm")]: {},
 }));
 
-const Row = styled("div")(() => ({
+const Row = styled("div")(({ theme }) => ({
   display: "flex",
-  //   flexWrap: "wrap",
   gap: "12px",
+
+  [theme.breakpoints.down("md")]: {
+    width: "100%",
+  },
 }));
 
 const InputField = styled(TextField)(({ theme }) => ({
@@ -272,6 +374,21 @@ const InputField = styled(TextField)(({ theme }) => ({
   "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
     border: `1px solid ${theme.palette.primary.main}`,
   },
+
+  [theme.breakpoints.down("md")]: {
+    width: "100%",
+
+    "& .MuiOutlinedInput-input": {
+      height: "42px",
+      padding: "15px",
+    },
+  },
+
+  [theme.breakpoints.down("sm")]: {
+    "& .MuiOutlinedInput-input": {
+      height: "38px",
+    },
+  },
 }));
 
 const VerifyButton = styled(Button)(({ theme }) => ({
@@ -282,14 +399,22 @@ const VerifyButton = styled(Button)(({ theme }) => ({
   border: "none",
   borderRadius: "5px",
   boxShadow: "none",
-  transition: "color .3s ease",
+  transition: "all .s ease",
 
   "&:hover": {
     boxShadow: "none",
 
-    transition: "color .3s ease",
+    transition: "all .s ease",
     background: theme.palette.primary.main,
     color: theme.palette.background.default,
+  },
+
+  [theme.breakpoints.down("md")]: {
+    height: "42px",
+  },
+
+  [theme.breakpoints.down("sm")]: {
+    height: "38px",
   },
 }));
 
@@ -307,19 +432,111 @@ const SearchAddressButton = styled(Button)(({ theme }) => ({
     background: theme.palette.primary.main,
     color: theme.palette.background.default,
   },
+  [theme.breakpoints.down("md")]: {
+    height: "42px",
+  },
+
+  [theme.breakpoints.down("sm")]: {
+    height: "38px",
+  },
 }));
 
 const AgreeArea = styled(Box)(() => ({}));
 
 const AgreeLabel = styled("label")(({ theme }) => ({
   display: "inline-block",
-  fontSize: "14px",
+  fontSize: "1rem",
   fontWeight: 500,
   letterSpacing: "0",
-  color: theme.palette.grey[800],
+  color: theme.palette.grey[700],
   textAlign: "left",
   width: "100%",
-  marginBottom: "25px",
+  marginBottom: "20px",
+
+  [theme.breakpoints.down("sm")]: {
+    marginTop: "16px",
+  },
+}));
+
+const AgreeCheckbox = styled("div")(() => ({
+  display: "flex",
+  flexDirection: "column",
+  gap: "15px",
+
+  "& label span:first-of-type": {
+    borderRadius: "100%",
+  },
+}));
+
+const StyledFormControlLabel = styled(FormControlLabel, {
+  shouldForwardProp: (prop) => prop !== "checked" && prop !== "isAll",
+})<{ checked?: boolean; isAll?: boolean }>(({ theme, checked, isAll }) => ({
+  margin: 0,
+
+  "& .MuiFormControlLabel-label": {
+    color: checked
+      ? theme.palette.primary.main
+      : isAll
+        ? theme.palette.grey[700]
+        : theme.palette.grey[500],
+
+    textAlign: "left",
+    fontSize: "1rem",
+    transition: "all. 3s ease",
+  },
+}));
+
+// 체크박스 아이콘
+const CircleIcon = styled("span")(({ theme }) => ({
+  width: "24px",
+  height: "24px",
+  borderRadius: "100%",
+  border: `1px solid ${theme.palette.grey[100]}`,
+  display: "inline-block",
+  boxSizing: "border-box",
+
+  [theme.breakpoints.down("md")]: {
+    width: "20px",
+    height: "20px",
+  },
+
+  [theme.breakpoints.down("sm")]: {
+    width: "16px",
+    height: "16px",
+  },
+}));
+
+const CircleCheckedIcon = styled("span")(({ theme }) => ({
+  width: "24px",
+  height: "24px",
+  borderRadius: "50%",
+  border: `1px solid ${theme.palette.primary.main}`,
+  background: theme.palette.primary.main,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  boxSizing: "border-box",
+
+  "&::after": {
+    content: '""',
+    width: "8px",
+    height: "8px",
+    border: "2px solid white",
+    marginBottom: "2px",
+    borderTop: "none",
+    borderLeft: "none",
+    transform: "rotate(45deg)",
+  },
+
+  [theme.breakpoints.down("md")]: {
+    width: "20px",
+    height: "20px",
+  },
+
+  [theme.breakpoints.down("sm")]: {
+    width: "16px",
+    height: "16px",
+  },
 }));
 
 const SubmitButton = styled(Button)(({ theme }) => ({
@@ -331,36 +548,22 @@ const SubmitButton = styled(Button)(({ theme }) => ({
   fontWeight: 500,
   border: `1px solid ${theme.palette.primary.main}`,
   borderRadius: "5px",
-  transition: "color .3s ease",
+  transition: "all .3s ease",
   boxShadow: "none",
   marginTop: "72px",
 
-  "&::before": {
-    content: '""',
-    position: "absolute",
-    inset: 0,
-    background: theme.palette.background.default,
-    transform: "scaleX(0)",
-    transformOrigin: "left",
-    transition: "transform .4s ease",
-    zIndex: 0,
-  },
-
-  "& span": {
-    position: "relative",
-    zIndex: 1,
-    transition: "all .3s ease",
-  },
-
   "&:hover": {
     boxShadow: "none !important",
-  },
-
-  "&:hover span": {
+    transition: "all .s ease",
     color: theme.palette.primary.main,
+    background: theme.palette.background.default,
   },
 
-  "&:hover::before": {
-    transform: "scaleX(1)",
+  [theme.breakpoints.down("md")]: {
+    height: "42px",
+  },
+
+  [theme.breakpoints.down("sm")]: {
+    height: "38px",
   },
 }));
