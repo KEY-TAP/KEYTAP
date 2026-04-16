@@ -399,12 +399,12 @@ const VerifyButton = styled(Button)(({ theme }) => ({
   border: "none",
   borderRadius: "5px",
   boxShadow: "none",
-  transition: "all .s ease",
+  transition: "all .3s ease",
 
   "&:hover": {
     boxShadow: "none",
 
-    transition: "all .s ease",
+    transition: "all .3s ease",
     background: theme.palette.primary.main,
     color: theme.palette.background.default,
   },
@@ -554,7 +554,7 @@ const SubmitButton = styled(Button)(({ theme }) => ({
 
   "&:hover": {
     boxShadow: "none !important",
-    transition: "all .s ease",
+    transition: "all .3s ease",
     color: theme.palette.primary.main,
     background: theme.palette.background.default,
   },
