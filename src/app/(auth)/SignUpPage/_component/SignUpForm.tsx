@@ -1,6 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+
+// schema / hook
+import { signUpSchema, type SignUpFormValues } from "@/schemas/auth/signUpSchema";
+import { useSignUpMutation } from "@/hooks/auth/useSignUpMutation";
 
 // mui
 import { styled } from "@mui/material/styles";
@@ -17,49 +22,193 @@ import IconButton from "@mui/material/IconButton";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 
+type FieldErrors = Partial<Record<keyof SignUpFormValues, string>>;
+
+const initialFormValues: SignUpFormValues = {
+  email: "",
+  password: "",
+  passwordConfirm: "",
+  name: "",
+  phone: "",
+  zipCode: "",
+  address1: "",
+  address2: "",
+  agreeTerms: false,
+  agreePrivacy: false,
+  agreeMarketing: false,
+};
+
 export default function SignUpForm() {
+  const router = useRouter();
+
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
 
-  const [agreements, setAgreements] = useState({
-    agreeAll: false,
-    agreeTerms: false,
-    agreePrivacy: false,
-    agreeMarketing: false,
-  });
+  const [formValues, setFormValues] = useState<SignUpFormValues>(initialFormValues);
+  const [errors, setErrors] = useState<FieldErrors>({});
 
-  const onSubmit = (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    alert("준비중입니다.");
-  };
+  const signUpMutation = useSignUpMutation();
+
+  const agreements = useMemo(
+    () => ({
+      agreeAll: formValues.agreeTerms && formValues.agreePrivacy && formValues.agreeMarketing,
+      agreeTerms: formValues.agreeTerms,
+      agreePrivacy: formValues.agreePrivacy,
+      agreeMarketing: formValues.agreeMarketing,
+    }),
+    [formValues.agreeMarketing, formValues.agreePrivacy, formValues.agreeTerms],
+  );
 
   const comingSoon = () => alert("준비중입니다.");
 
+  const handleChange =
+    (name: keyof SignUpFormValues) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+
+      const nextValues = {
+        ...formValues,
+        [name]: value,
+      } as SignUpFormValues;
+
+      setFormValues(nextValues);
+
+      validateField(name, nextValues);
+
+      if (name === "password" || name === "passwordConfirm") {
+        validateField("passwordConfirm", nextValues);
+      }
+    };
+
   const handleAgreeAllChange = (checked: boolean) => {
-    setAgreements({
-      agreeAll: checked,
+    const nextValues = {
+      ...formValues,
       agreeTerms: checked,
       agreePrivacy: checked,
       agreeMarketing: checked,
-    });
+    };
+
+    setFormValues(nextValues);
+
+    validateAgreementField("agreeTerms", nextValues);
+    validateAgreementField("agreePrivacy", nextValues);
+    validateAgreementField("agreeMarketing", nextValues);
   };
 
   const handleAgreeItemChange = (
     name: "agreeTerms" | "agreePrivacy" | "agreeMarketing",
     checked: boolean,
   ) => {
-    const nextAgreements = {
-      ...agreements,
+    const nextValues = {
+      ...formValues,
       [name]: checked,
     };
 
-    const isAllChecked =
-      nextAgreements.agreeTerms && nextAgreements.agreePrivacy && nextAgreements.agreeMarketing;
+    setFormValues(nextValues);
 
-    setAgreements({
-      ...nextAgreements,
-      agreeAll: isAllChecked,
+    validateAgreementField(name, nextValues);
+  };
+
+  const validateField = (name: keyof SignUpFormValues, nextValues: SignUpFormValues) => {
+    const result = signUpSchema.safeParse(nextValues);
+
+    if (result.success) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+        ...(name === "password" ? { passwordConfirm: "" } : {}),
+      }));
+      return;
+    }
+
+    const nextErrors: Partial<Record<keyof SignUpFormValues, string>> = {};
+
+    result.error.issues.forEach((issue) => {
+      const fieldName = issue.path[0] as keyof SignUpFormValues | undefined;
+
+      if (!fieldName) return;
+      if (nextErrors[fieldName]) return;
+
+      nextErrors[fieldName] = issue.message;
     });
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: nextErrors[name] ?? "",
+      ...(name === "password" || name === "passwordConfirm"
+        ? { passwordConfirm: nextErrors.passwordConfirm ?? "" }
+        : {}),
+    }));
+  };
+
+  const validateAgreementField = (
+    name: "agreeTerms" | "agreePrivacy" | "agreeMarketing",
+    nextValues: SignUpFormValues,
+  ) => {
+    const result = signUpSchema.safeParse(nextValues);
+
+    if (result.success) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+      return;
+    }
+
+    const nextErrors: Partial<Record<keyof SignUpFormValues, string>> = {};
+
+    result.error.issues.forEach((issue) => {
+      const fieldName = issue.path[0] as keyof SignUpFormValues | undefined;
+
+      if (!fieldName) return;
+      if (nextErrors[fieldName]) return;
+
+      nextErrors[fieldName] = issue.message;
+    });
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: nextErrors[name] ?? "",
+    }));
+  };
+
+  const validateForm = () => {
+    const result = signUpSchema.safeParse(formValues);
+
+    if (result.success) {
+      setErrors({});
+      return true;
+    }
+
+    const nextErrors: FieldErrors = {};
+
+    result.error.issues.forEach((issue) => {
+      const fieldName = issue.path[0] as keyof SignUpFormValues | undefined;
+
+      if (!fieldName) return;
+      if (nextErrors[fieldName]) return;
+
+      nextErrors[fieldName] = issue.message;
+    });
+
+    setErrors(nextErrors);
+    return false;
+  };
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const isValid = validateForm();
+    if (!isValid) return;
+
+    try {
+      await signUpMutation.mutateAsync(formValues);
+      alert("회원가입이 완료되었습니다.");
+      router.push("/MainPage");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "회원가입 중 오류가 발생했습니다.";
+
+      alert(message);
+    }
   };
 
   return (
@@ -79,6 +228,10 @@ export default function SignUpForm() {
               fullWidth
               placeholder="이메일을 입력해주세요."
               size="small"
+              value={formValues.email}
+              onChange={handleChange("email")}
+              error={!!errors.email}
+              helperText={errors.email}
             />
           </InputWrap>
         </Field>
@@ -95,6 +248,10 @@ export default function SignUpForm() {
               placeholder="비밀번호를 입력해주세요."
               size="small"
               type={showPw ? "text" : "password"}
+              value={formValues.password}
+              onChange={handleChange("password")}
+              error={!!errors.password}
+              helperText={errors.password}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -124,6 +281,10 @@ export default function SignUpForm() {
               placeholder="비밀번호를 다시 한번 입력해주세요."
               size="small"
               type={showPw2 ? "text" : "password"}
+              value={formValues.passwordConfirm}
+              onChange={handleChange("passwordConfirm")}
+              error={!!errors.passwordConfirm}
+              helperText={errors.passwordConfirm}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -152,6 +313,10 @@ export default function SignUpForm() {
               fullWidth
               placeholder="이름을 입력해주세요."
               size="small"
+              value={formValues.name}
+              onChange={handleChange("name")}
+              error={!!errors.name}
+              helperText={errors.name}
             />
           </InputWrap>
         </Field>
@@ -168,6 +333,10 @@ export default function SignUpForm() {
                 fullWidth
                 placeholder="휴대폰 번호를 인증해주세요."
                 size="small"
+                value={formValues.phone}
+                onChange={handleChange("phone")}
+                error={!!errors.phone}
+                helperText={errors.phone}
               />
               <VerifyButton type="button" variant="contained" onClick={comingSoon}>
                 인증하기
@@ -181,15 +350,42 @@ export default function SignUpForm() {
           <Label>주소</Label>
           <InputWrap>
             <Row>
-              <InputField name="zipcode" fullWidth placeholder="우편번호" size="small" />
+              <InputField
+                name="zipCode"
+                fullWidth
+                placeholder="우편번호"
+                size="small"
+                value={formValues.zipCode}
+                onChange={handleChange("zipCode")}
+                error={!!errors.zipCode}
+                helperText={errors.zipCode}
+              />
               <SearchAddressButton type="button" variant="outlined" onClick={comingSoon}>
                 주소검색
               </SearchAddressButton>
             </Row>
 
-            <InputField name="address1" fullWidth placeholder="기본주소" size="small" />
+            <InputField
+              name="address1"
+              fullWidth
+              placeholder="기본주소"
+              size="small"
+              value={formValues.address1}
+              onChange={handleChange("address1")}
+              error={!!errors.address1}
+              helperText={errors.address1}
+            />
 
-            <InputField name="address2" fullWidth placeholder="나머지 주소" size="small" />
+            <InputField
+              name="address2"
+              fullWidth
+              placeholder="나머지 주소"
+              size="small"
+              value={formValues.address2}
+              onChange={handleChange("address2")}
+              error={!!errors.address2}
+              helperText={errors.address2}
+            />
           </InputWrap>
         </Field>
 
@@ -212,6 +408,7 @@ export default function SignUpForm() {
               }
               label="이용약관 및 개인정보 수집 및 이용, 쇼핑정보 수신에 모두 동의합니다."
             />
+
             <StyledFormControlLabel
               checked={agreements.agreeTerms}
               control={
@@ -225,6 +422,8 @@ export default function SignUpForm() {
               }
               label="[필수] 이용약관 동의"
             />
+            {errors.agreeTerms && <AgreeErrorText>{errors.agreeTerms}</AgreeErrorText>}
+
             <StyledFormControlLabel
               checked={agreements.agreePrivacy}
               control={
@@ -238,6 +437,8 @@ export default function SignUpForm() {
               }
               label="[필수] 개인정보 수집 및 이용 동의"
             />
+            {errors.agreePrivacy && <AgreeErrorText>{errors.agreePrivacy}</AgreeErrorText>}
+
             <StyledFormControlLabel
               checked={agreements.agreeMarketing}
               control={
@@ -254,8 +455,13 @@ export default function SignUpForm() {
           </AgreeCheckbox>
         </AgreeArea>
 
-        <SubmitButton type="submit" fullWidth variant="contained">
-          가입하기
+        <SubmitButton
+          type="submit"
+          fullWidth
+          variant="contained"
+          disabled={signUpMutation.isPending}
+        >
+          {signUpMutation.isPending ? "가입 중..." : "가입하기"}
         </SubmitButton>
       </Form>
     </Wrap>
@@ -302,7 +508,6 @@ const Title = styled(Typography)(({ theme }) => ({
 const Field = styled(Box)(({ theme }) => ({
   textAlign: "left",
   marginBottom: "25px",
-
   display: "flex",
   alignItems: "center",
 
@@ -335,8 +540,6 @@ const InputWrap = styled("div")(({ theme }) => ({
   [theme.breakpoints.down("md")]: {
     width: "100%",
   },
-
-  [theme.breakpoints.down("sm")]: {},
 }));
 
 const Row = styled("div")(({ theme }) => ({
@@ -364,15 +567,19 @@ const InputField = styled(TextField)(({ theme }) => ({
   "& .MuiOutlinedInput-notchedOutline": {
     border: `1px solid ${theme.palette.grey[100]}`,
     borderRadius: "5px",
-
     transition: "all .3s ease",
   },
 
   "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
     border: `1px solid ${theme.palette.primary.main}`,
   },
+
   "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
     border: `1px solid ${theme.palette.primary.main}`,
+  },
+
+  "& .MuiFormHelperText-root": {
+    marginLeft: 0,
   },
 
   [theme.breakpoints.down("md")]: {
@@ -403,7 +610,6 @@ const VerifyButton = styled(Button)(({ theme }) => ({
 
   "&:hover": {
     boxShadow: "none",
-
     transition: "all .3s ease",
     background: theme.palette.primary.main,
     color: theme.palette.background.default,
@@ -427,11 +633,11 @@ const SearchAddressButton = styled(Button)(({ theme }) => ({
 
   "&:hover": {
     boxShadow: "none",
-
     transition: "color .3s ease",
     background: theme.palette.primary.main,
     color: theme.palette.background.default,
   },
+
   [theme.breakpoints.down("md")]: {
     height: "42px",
   },
@@ -479,10 +685,9 @@ const StyledFormControlLabel = styled(FormControlLabel, {
       : isAll
         ? theme.palette.grey[700]
         : theme.palette.grey[500],
-
     textAlign: "left",
     fontSize: "1rem",
-    transition: "all. 3s ease",
+    transition: "all .3s ease",
   },
 }));
 
@@ -539,6 +744,13 @@ const CircleCheckedIcon = styled("span")(({ theme }) => ({
   },
 }));
 
+const AgreeErrorText = styled(Typography)(({ theme }) => ({
+  marginTop: "-8px",
+  fontSize: "0.875rem",
+  color: theme.palette.error.main,
+  textAlign: "left",
+}));
+
 const SubmitButton = styled(Button)(({ theme }) => ({
   maxWidth: "200px",
   position: "relative",
@@ -555,8 +767,14 @@ const SubmitButton = styled(Button)(({ theme }) => ({
   "&:hover": {
     boxShadow: "none !important",
     transition: "all .3s ease",
-    color: theme.palette.primary.main,
     background: theme.palette.background.default,
+    color: theme.palette.primary.main,
+  },
+
+  "&.Mui-disabled": {
+    color: theme.palette.grey[400],
+    background: theme.palette.grey[100],
+    borderColor: theme.palette.grey[200],
   },
 
   [theme.breakpoints.down("md")]: {
