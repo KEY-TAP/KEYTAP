@@ -140,21 +140,61 @@
 ```text
 src
 ├── app
-│   ├── (auth)          # 인증 관련 (로그인 login.tsx, 회원가입 signup.tsx)
-│   ├── (main)          # 주요 서비스 로직
-│   │   ├── (protected) # 개인화 서비스 (마이페이지, 찜 목록 wish-list.tsx)
-│   │   └── MainPage    # 메인 랜딩 및 서비스 홈
-│   ├── layout.tsx      # 전역 레이아웃 및 테마 설정
-│   └── page.tsx        # 서비스 시작점
-├── common              # 재사용 가능 자산
-│   ├── components      # 주요 UI 구성 요소
-│   │   ├── Landing     # 메인 타건 인터랙션 컴포넌트
-│   │   ├── Product     # 제품 카드 및 상세 리스트
-│   │   └── Dashboard   # 관리자 통계 위젯
-│   ├── icons           # 서비스 전용 SVG 아이콘
-│   └── layout          # 공통 레이아웃 (Header, Footer)
-├── lib                 # 외부 라이브러리 (supabase.ts 설정 등)
-├── theme               # 디자인 시스템 (theme.ts 전역 스타일)
-├── types               # 데이터 규격 (keyboard.ts, user.ts 타입 정의)
-└── utils               # 유틸리티 함수 (audio.ts 소리 재생 로직 등)
+│   ├── (auth)
+│   │   ├── LoginPage
+│   │   │   ├── _component
+│   │   │   │   └── LoginForm.tsx
+│   │   │   └── page.tsx
+│   │   ├── SignUpPage
+│   │   │   ├── _component
+│   │   │   │   └── SignUpForm.tsx
+│   │   │   └── page.tsx
+│   │   └── layout.tsx
+│   ├── (main)
+│   │   ├── (protected)
+│   │   │   ├── MyPage
+│   │   │   │   ├── _component
+│   │   │   │   │   └── ProfileForm.tsx
+│   │   │   │   └── page.tsx
+│   │   │   └── WishListPage
+│   │   │       ├── _component
+│   │   │       │   ├── CompareModal.tsx
+│   │   │       │   └── FavoriteList.tsx
+│   │   │       └── page.tsx
+│   │   ├── MainPage
+│   │   │   ├── _component
+│   │   │   │   └── MainComponents.tsx
+│   │   │   └── page.tsx
+│   │   └── layout.tsx
+│   ├── favicon.ico
+│   ├── globals.css
+│   ├── layout.tsx
+│   ├── not-found.tsx
+│   ├── page.tsx
+│   └── provider.tsx
+├── common
+│   ├── components
+│   │   ├── LandingPage
+│   │   │   ├── LandingPage.tsx
+│   │   │   └── BottomSheetCard.tsx
+│   │   ├── ProductCard.tsx
+│   │   └── ProductCarousel.tsx
+│   ├── icons
+│   │   ├── googleIcon.tsx
+│   │   └── icons.ts
+│   └── layout
+│       ├── BottomSheet.tsx
+│       ├── Footer.tsx
+│       ├── Header.tsx
+│       ├── MainLayout.tsx
+│       ├── Nav.tsx
+│       └── AuthTest.tsx
+├── lib
+│   └── supabaseClient.ts
+├── theme
+│   └── theme.ts
+├── types
+│   └── keyboard.type.ts
+└── utils
+    └── keyRow.ts
 ```
