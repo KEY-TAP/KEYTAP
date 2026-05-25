@@ -10,10 +10,12 @@ import HomeIcon from "@mui/icons-material/Home";
 import AddBoxIcon from "@mui/icons-material/AddBox";
 import KeyboardIcon from "@mui/icons-material/Keyboard";
 import PeopleIcon from "@mui/icons-material/People";
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 
 const menuItems = [
   { label: "홈", href: "/admin", icon: <HomeIcon /> },
   { label: "상품 관리", href: "/admin/products", icon: <AddBoxIcon /> },
+  { label: "브랜드 관리", href: "/admin/brands", icon: <LocalOfferIcon /> },
   { label: "스위치 등록", href: "/admin/switches", icon: <KeyboardIcon /> },
   { label: "유저 관리", href: "/admin/users", icon: <PeopleIcon /> },
 ];
