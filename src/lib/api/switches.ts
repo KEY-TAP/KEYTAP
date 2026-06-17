@@ -29,7 +29,7 @@ export async function getSwitchById(switchId: number) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("switches") // ← 수정
+    .from("switches")
     .select(
       `
       switch_id,
@@ -44,7 +44,7 @@ export async function getSwitchById(switchId: number) {
     `,
     )
     .eq("switch_id", switchId)
-    .single(); // ← 추가
+    .single();
 
   if (error) throw new Error(error.message);
   return data;
