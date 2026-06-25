@@ -1,6 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { supabase } from "@/api/supabaseClient";
+
+// schema / hook
+import { loginSchema, type LoginFormValues } from "@/schemas/auth/loginSchema";
+import { useSignInMutation } from "@/hooks/auth/useSignInMutation";
 
 // mui
 import { styled } from "@mui/material/styles";
@@ -16,15 +23,116 @@ import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import GoogleIcon from "@/common/icons/googleIcon";
 
-export default function LoginForm() {
-  const [showPw, setShowPw] = useState(false);
+type FieldErrors = Partial<Record<keyof LoginFormValues, string>>;
 
-  const onSubmit = (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    alert("준비중입니다.");
-  };
+const initialFormValues: LoginFormValues = {
+  email: "",
+  password: "",
+};
+
+export default function LoginForm() {
+  const router = useRouter();
+
+  const [showPw, setShowPw] = useState(false);
+  const [formValues, setFormValues] = useState<LoginFormValues>(initialFormValues);
+  const [errors, setErrors] = useState<FieldErrors>({});
+
+  const signInMutation = useSignInMutation();
 
   const comingSoon = () => alert("준비중입니다.");
+
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/callback`,
+      },
+    });
+
+    if (error) {
+      alert("구글 로그인 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleChange =
+    (name: keyof LoginFormValues) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const nextValues = {
+        ...formValues,
+        [name]: e.target.value,
+      };
+
+      setFormValues(nextValues);
+      validateField(name, nextValues);
+    };
+
+  const validateField = (name: keyof LoginFormValues, nextValues: LoginFormValues) => {
+    const result = loginSchema.safeParse(nextValues);
+
+    if (result.success) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+      return;
+    }
+
+    const nextErrors: FieldErrors = {};
+
+    result.error.issues.forEach((issue) => {
+      const fieldName = issue.path[0] as keyof LoginFormValues | undefined;
+
+      if (!fieldName) return;
+      if (nextErrors[fieldName]) return;
+
+      nextErrors[fieldName] = issue.message;
+    });
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: nextErrors[name] ?? "",
+    }));
+  };
+
+  const validateForm = () => {
+    const result = loginSchema.safeParse(formValues);
+
+    if (result.success) {
+      setErrors({});
+      return true;
+    }
+
+    const nextErrors: FieldErrors = {};
+
+    result.error.issues.forEach((issue) => {
+      const fieldName = issue.path[0] as keyof LoginFormValues | undefined;
+
+      if (!fieldName) return;
+      if (nextErrors[fieldName]) return;
+
+      nextErrors[fieldName] = issue.message;
+    });
+
+    setErrors(nextErrors);
+    return false;
+  };
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const isValid = validateForm();
+    if (!isValid) return;
+
+    try {
+      await signInMutation.mutateAsync(formValues);
+
+      alert("로그인되었습니다.");
+      router.push("/MainPage");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "로그인 중 오류가 발생했습니다.";
+
+      alert(message);
+    }
+  };
 
   return (
     <Wrap aria-label="로그인 폼">
@@ -42,6 +150,10 @@ export default function LoginForm() {
             fullWidth
             placeholder="이메일을 입력해주세요."
             size="small"
+            value={formValues.email}
+            onChange={handleChange("email")}
+            error={!!errors.email}
+            helperText={errors.email}
           />
         </Field>
 
@@ -56,6 +168,10 @@ export default function LoginForm() {
             placeholder="비밀번호를 입력해주세요."
             size="small"
             type={showPw ? "text" : "password"}
+            value={formValues.password}
+            onChange={handleChange("password")}
+            error={!!errors.password}
+            helperText={errors.password}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
@@ -75,13 +191,19 @@ export default function LoginForm() {
           </ForgotPassword>
         </Field>
 
-        <LoginButton type="submit" fullWidth variant="contained" color="primary">
-          <span>로그인</span>
+        <LoginButton
+          type="submit"
+          fullWidth
+          variant="contained"
+          color="primary"
+          disabled={signInMutation.isPending}
+        >
+          <span>{signInMutation.isPending ? "로그인 중..." : "로그인"}</span>
         </LoginButton>
 
         <SignUpButton
           type="button"
-          onClick={comingSoon}
+          onClick={() => router.push("/SignUpPage")}
           fullWidth
           variant="outlined"
           color="inherit"
@@ -91,7 +213,7 @@ export default function LoginForm() {
 
         <LoginWithGoogle
           type="button"
-          onClick={comingSoon}
+          onClick={handleGoogleLogin}
           fullWidth
           variant="outlined"
           color="inherit"
@@ -166,15 +288,19 @@ const InputField = styled(TextField)(({ theme }) => ({
   "& .MuiOutlinedInput-notchedOutline": {
     border: `1px solid ${theme.palette.grey[100]}`,
     borderRadius: "5px",
-
     transition: "all .3s ease",
   },
 
   "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
     border: `1px solid ${theme.palette.primary.main}`,
   },
+
   "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
     border: `1px solid ${theme.palette.primary.main}`,
+  },
+
+  "& .MuiFormHelperText-root": {
+    marginLeft: 0,
   },
 }));
 
@@ -208,17 +334,21 @@ const LoginButton = styled(Button)(({ theme }) => ({
   fontWeight: 500,
   border: `1px solid ${theme.palette.primary.main}`,
   borderRadius: "5px",
-
   transition: "all .3s ease",
   boxShadow: "none",
   color: theme.palette.background.default,
 
   "&:hover": {
     boxShadow: "none",
-
     transition: "all .3s ease",
     background: theme.palette.background.default,
     color: theme.palette.primary.main,
+  },
+
+  "&.Mui-disabled": {
+    color: theme.palette.grey[400],
+    background: theme.palette.grey[100],
+    borderColor: theme.palette.grey[200],
   },
 }));
 
@@ -229,14 +359,12 @@ const SignUpButton = styled(Button)(({ theme }) => ({
   fontWeight: 500,
   border: `1px solid ${theme.palette.grey[200]}`,
   borderRadius: "5px",
-
   transition: "all .3s ease",
   boxShadow: "none",
   color: theme.palette.grey[600],
 
   "&:hover": {
     boxShadow: "none",
-
     transition: "all .3s ease",
     background: theme.palette.primary.main,
     color: theme.palette.background.default,
@@ -294,45 +422,3 @@ const LoginWithGoogle = styled(Button)(({ theme }) => ({
     },
   },
 }));
-
-// const LoginButton = styled(Button)(({ theme }) => ({
-//   position: "relative",
-//   overflow: "hidden",
-//   height: "48px",
-//   fontSize: "1.125rem",
-//   fontWeight: 500,
-//   border: `1px solid ${theme.palette.primary.main}`,
-//   borderRadius: "5px",
-
-//   transition: "color .3s ease",
-//   boxShadow: "none",
-
-//   "&::before": {
-//     content: '""',
-//     position: "absolute",
-//     inset: 0,
-//     background: theme.palette.background.default,
-//     transform: "scaleX(0)",
-//     transformOrigin: "left",
-//     transition: "transform .4s ease",
-//     zIndex: 0,
-//   },
-
-//   "& span": {
-//     position: "relative",
-//     zIndex: 1,
-//     transition: "all .3s ease",
-//   },
-
-//   "&:hover": {
-//     boxShadow: "none !important",
-//   },
-
-//   "&:hover span": {
-//     color: theme.palette.primary.main,
-//   },
-
-//   "&:hover::before": {
-//     transform: "scaleX(1)",
-//   },
-// }));
