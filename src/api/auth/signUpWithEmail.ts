@@ -1,28 +1,29 @@
+// 유저 이메일과 비밀번호를 사용하여 회원가입하는 API
+
 import { supabase } from "@/api/supabaseClient";
 import type { SignUpFormValues } from "@/schemas/auth/signUpSchema";
 
 type SignUpWithEmailResult = {
   userId: string;
   email: string;
+  hasSession: boolean;
 };
 
 export async function signUpWithEmail(values: SignUpFormValues): Promise<SignUpWithEmailResult> {
-  const {
-    email,
-    password,
-    name,
-    phone,
-    zipCode,
-    address1,
-    address2,
-    agreeTerms,
-    agreePrivacy,
-    agreeMarketing,
-  } = values;
+  const { email, password, name, agreeTerms, agreePrivacy, agreeMarketing } = values;
 
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: {
+        name,
+        agree_terms: agreeTerms,
+        agree_privacy: agreePrivacy,
+        agree_marketing: agreeMarketing,
+        signup_provider: "email",
+      },
+    },
   });
 
   if (authError) {
@@ -59,22 +60,11 @@ export async function signUpWithEmail(values: SignUpFormValues): Promise<SignUpW
   const { error: profileError } = await supabase.from("user_profiles").insert({
     user_id: userId,
     name,
-    phone,
+    // phone,
   });
 
   if (profileError) {
     throw new Error(`user_profiles 저장 실패: ${profileError.message}`);
-  }
-
-  const { error: addressError } = await supabase.from("user_address").insert({
-    fk_user_id: userId,
-    zip_code: zipCode,
-    address1,
-    address2,
-  });
-
-  if (addressError) {
-    throw new Error(`user_address 저장 실패: ${addressError.message}`);
   }
 
   const { error: agreementsError } = await supabase.from("user_agreements").insert({
@@ -89,7 +79,8 @@ export async function signUpWithEmail(values: SignUpFormValues): Promise<SignUpW
   }
 
   return {
-    userId,
+    userId: user.id,
     email: user.email,
+    hasSession: !!authData.session,
   };
 }
