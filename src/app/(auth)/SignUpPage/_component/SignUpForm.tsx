@@ -29,10 +29,6 @@ const initialFormValues: SignUpFormValues = {
   password: "",
   passwordConfirm: "",
   name: "",
-  phone: "",
-  zipCode: "",
-  address1: "",
-  address2: "",
   agreeTerms: false,
   agreePrivacy: false,
   agreeMarketing: false,
@@ -201,7 +197,14 @@ export default function SignUpForm() {
     if (!isValid) return;
 
     try {
-      await signUpMutation.mutateAsync(formValues);
+      const result = await signUpMutation.mutateAsync(formValues);
+
+      if (!result.hasSession) {
+        alert("회원가입은 완료되었지만 로그인 세션을 가져오지 못했습니다. 다시 로그인해주세요.");
+        router.push("/LoginPage");
+        return;
+      }
+
       alert("회원가입이 완료되었습니다.");
       router.push("/MainPage");
     } catch (error) {
@@ -322,7 +325,7 @@ export default function SignUpForm() {
         </Field>
 
         {/* 연락처 + 인증하기 */}
-        <Field>
+        {/* <Field>
           <Label htmlFor="signup-phone">연락처</Label>
           <InputWrap>
             <Row>
@@ -345,7 +348,7 @@ export default function SignUpForm() {
           </InputWrap>
         </Field>
 
-        {/* 주소 */}
+        {/* 주소 
         <Field>
           <Label>주소</Label>
           <InputWrap>
@@ -387,7 +390,7 @@ export default function SignUpForm() {
               helperText={errors.address2}
             />
           </InputWrap>
-        </Field>
+        </Field> */}
 
         {/* 약관동의 */}
         <AgreeArea>
@@ -542,14 +545,14 @@ const InputWrap = styled("div")(({ theme }) => ({
   },
 }));
 
-const Row = styled("div")(({ theme }) => ({
-  display: "flex",
-  gap: "12px",
+// const Row = styled("div")(({ theme }) => ({
+//   display: "flex",
+//   gap: "12px",
 
-  [theme.breakpoints.down("md")]: {
-    width: "100%",
-  },
-}));
+//   [theme.breakpoints.down("md")]: {
+//     width: "100%",
+//   },
+// }));
 
 const InputField = styled(TextField)(({ theme }) => ({
   "& .MuiOutlinedInput-input": {
@@ -598,54 +601,54 @@ const InputField = styled(TextField)(({ theme }) => ({
   },
 }));
 
-const VerifyButton = styled(Button)(({ theme }) => ({
-  width: "148px",
-  height: "48px",
-  color: theme.palette.grey[600],
-  background: theme.palette.secondary.main,
-  border: "none",
-  borderRadius: "5px",
-  boxShadow: "none",
-  transition: "all .3s ease",
+// const VerifyButton = styled(Button)(({ theme }) => ({
+//   width: "148px",
+//   height: "48px",
+//   color: theme.palette.grey[600],
+//   background: theme.palette.secondary.main,
+//   border: "none",
+//   borderRadius: "5px",
+//   boxShadow: "none",
+//   transition: "all .3s ease",
 
-  "&:hover": {
-    boxShadow: "none",
-    transition: "all .3s ease",
-    background: theme.palette.primary.main,
-    color: theme.palette.background.default,
-  },
+//   "&:hover": {
+//     boxShadow: "none",
+//     transition: "all .3s ease",
+//     background: theme.palette.primary.main,
+//     color: theme.palette.background.default,
+//   },
 
-  [theme.breakpoints.down("md")]: {
-    height: "42px",
-  },
+//   [theme.breakpoints.down("md")]: {
+//     height: "42px",
+//   },
 
-  [theme.breakpoints.down("sm")]: {
-    height: "38px",
-  },
-}));
+//   [theme.breakpoints.down("sm")]: {
+//     height: "38px",
+//   },
+// }));
 
-const SearchAddressButton = styled(Button)(({ theme }) => ({
-  width: "148px",
-  height: "48px",
-  borderRadius: "5px",
-  border: "1px solid",
-  boxShadow: "none",
+// const SearchAddressButton = styled(Button)(({ theme }) => ({
+//   width: "148px",
+//   height: "48px",
+//   borderRadius: "5px",
+//   border: "1px solid",
+//   boxShadow: "none",
 
-  "&:hover": {
-    boxShadow: "none",
-    transition: "color .3s ease",
-    background: theme.palette.primary.main,
-    color: theme.palette.background.default,
-  },
+//   "&:hover": {
+//     boxShadow: "none",
+//     transition: "color .3s ease",
+//     background: theme.palette.primary.main,
+//     color: theme.palette.background.default,
+//   },
 
-  [theme.breakpoints.down("md")]: {
-    height: "42px",
-  },
+//   [theme.breakpoints.down("md")]: {
+//     height: "42px",
+//   },
 
-  [theme.breakpoints.down("sm")]: {
-    height: "38px",
-  },
-}));
+//   [theme.breakpoints.down("sm")]: {
+//     height: "38px",
+//   },
+// }));
 
 const AgreeArea = styled(Box)(() => ({}));
 
