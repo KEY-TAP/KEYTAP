@@ -1,6 +1,23 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+
+// schema
+import {
+  hasPasswordChangeInput,
+  profileUpdateSchema,
+  withdrawSchema,
+} from "@/schemas/auth/signUpSchema";
+
+// hook
+import { useMyProfileQuery } from "@/hooks/auth/useMyProfileQuery";
+import { useUpdateMyProfileMutation } from "@/hooks/auth/useUpdateMyProfileMutation";
+import { useUpdatePasswordMutation } from "@/hooks/auth/useUpdatePasswordMutation";
+import { useWithdrawMutation } from "@/hooks/auth/useWithdrawMutation";
+
+// component
+import WithdrawConfirmDialog from "./WithdrawConfirmDialog";
 
 // mui
 import { styled } from "@mui/material/styles";
@@ -10,38 +27,61 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
-import Radio from "@mui/material/Radio";
-import RadioGroup from "@mui/material/RadioGroup";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
 
-// mui-icons
-import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+type ProfileData = {
+  email?: string | null;
+  name?: string | null;
+  agreeTerms?: boolean | null;
+  agreePrivacy?: boolean | null;
+  agreeMarketing?: boolean | null;
+};
 
 export default function ProfileForm() {
-  const [form, setForm] = useState({
-    email: "abc1234@gmail.com",
-    name: "홍길동",
-    phone: "010-1234-5678",
-    zipcode: "",
-    address1: "",
-    address2: "",
-    birthYear: "2000",
-    birthMonth: "01",
-    birthDay: "01",
-    gender: "여",
+  const { data: profile, isLoading, isError } = useMyProfileQuery();
+
+  if (isLoading) {
+    return <Typography>회원 정보를 불러오는 중입니다.</Typography>;
+  }
+
+  if (isError || !profile) {
+    return <Typography>회원 정보를 불러오지 못했습니다.</Typography>;
+  }
+
+  return <ProfileFormContent profile={profile} />;
+}
+
+function ProfileFormContent({ profile }: { profile: ProfileData }) {
+  const router = useRouter();
+
+  const updateProfileMutation = useUpdateMyProfileMutation();
+  const updatePasswordMutation = useUpdatePasswordMutation();
+  const withdrawMutation = useWithdrawMutation();
+
+  const [form, setForm] = useState(() => ({
+    email: profile.email ?? "",
+    name: profile.name ?? "",
+  }));
+
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    password: "",
+    passwordConfirm: "",
   });
 
-  const [agreements, setAgreements] = useState({
-    agreeAll: true,
-    agreeTerms: true,
-    agreePrivacy: true,
-    agreeMarketing: true,
-  });
+  const [agreements, setAgreements] = useState(() => ({
+    agreeAll: Boolean(profile.agreeTerms && profile.agreePrivacy && profile.agreeMarketing),
+    agreeTerms: Boolean(profile.agreeTerms),
+    agreePrivacy: Boolean(profile.agreePrivacy),
+    agreeMarketing: Boolean(profile.agreeMarketing),
+  }));
 
-  const years = Array.from({ length: 60 }, (_, index) => String(2025 - index));
-  const months = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, "0"));
-  const days = Array.from({ length: 31 }, (_, index) => String(index + 1).padStart(2, "0"));
+  const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
+  const [withdrawPassword, setWithdrawPassword] = useState("");
+
+  const isSubmitting =
+    updateProfileMutation.isPending ||
+    updatePasswordMutation.isPending ||
+    withdrawMutation.isPending;
 
   const handleChange =
     (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -51,12 +91,14 @@ export default function ProfileForm() {
       }));
     };
 
-  const handleSelectChange = (key: keyof typeof form) => (value: string) => {
-    setForm((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
+  const handlePasswordChange =
+    (key: keyof typeof passwordForm) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setPasswordForm((prev) => ({
+        ...prev,
+        [key]: e.target.value,
+      }));
+    };
 
   const handleAgreeAllChange = (checked: boolean) => {
     setAgreements({
@@ -85,13 +127,137 @@ export default function ProfileForm() {
     });
   };
 
-  const comingSoon = () => {
-    alert("준비중입니다.");
+  const getSubmitErrorMessage = (error: unknown) => {
+    const message =
+      error instanceof Error ? error.message : "회원 정보 수정 중 오류가 발생했습니다.";
+
+    const lowerMessage = message.toLowerCase();
+
+    if (lowerMessage.includes("current password") || lowerMessage.includes("current_password")) {
+      return "현재 비밀번호가 올바르지 않습니다.";
+    }
+
+    if (
+      lowerMessage.includes("same password") ||
+      lowerMessage.includes("different from the old password")
+    ) {
+      return "이전 비밀번호와 똑같습니다.";
+    }
+
+    return message;
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const getWithdrawErrorMessage = (error: unknown) => {
+    const message = error instanceof Error ? error.message : "회원탈퇴 중 오류가 발생했습니다.";
+
+    if (message.includes("비밀번호")) {
+      return message;
+    }
+
+    if (message.includes("로그인")) {
+      return message;
+    }
+
+    return "회원탈퇴 중 오류가 발생했습니다.";
+  };
+
+  const handleOpenWithdrawDialog = () => {
+    setWithdrawPassword("");
+    setWithdrawDialogOpen(true);
+  };
+
+  const handleCloseWithdrawDialog = () => {
+    if (withdrawMutation.isPending) return;
+
+    setWithdrawDialogOpen(false);
+    setWithdrawPassword("");
+  };
+
+  const handleConfirmWithdraw = async () => {
+    const parsedResult = withdrawSchema.safeParse({
+      password: withdrawPassword,
+    });
+
+    if (!parsedResult.success) {
+      alert(parsedResult.error.issues[0]?.message ?? "비밀번호를 입력해주세요.");
+      return;
+    }
+
+    try {
+      await withdrawMutation.mutateAsync({
+        password: parsedResult.data.password,
+      });
+
+      alert("회원탈퇴가 완료되었습니다.");
+      router.replace("/MainPage");
+      router.refresh();
+    } catch (error) {
+      alert(getWithdrawErrorMessage(error));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    alert("준비중입니다.");
+
+    const parsedResult = profileUpdateSchema.safeParse({
+      name: form.name,
+      currentPassword: passwordForm.currentPassword,
+      password: passwordForm.password,
+      passwordConfirm: passwordForm.passwordConfirm,
+      agreeTerms: agreements.agreeTerms,
+      agreePrivacy: agreements.agreePrivacy,
+      agreeMarketing: agreements.agreeMarketing,
+    });
+
+    if (!parsedResult.success) {
+      alert(parsedResult.error.issues[0]?.message ?? "입력값을 확인해주세요.");
+      return;
+    }
+
+    const values = parsedResult.data;
+
+    const shouldUpdatePassword = hasPasswordChangeInput({
+      currentPassword: values.currentPassword,
+      password: values.password,
+      passwordConfirm: values.passwordConfirm,
+    });
+
+    try {
+      if (shouldUpdatePassword) {
+        await updatePasswordMutation.mutateAsync({
+          currentPassword: values.currentPassword,
+          password: values.password,
+        });
+      }
+
+      await updateProfileMutation.mutateAsync({
+        name: values.name,
+        agreeTerms: values.agreeTerms,
+        agreePrivacy: values.agreePrivacy,
+        agreeMarketing: values.agreeMarketing,
+      });
+
+      setForm((prev) => ({
+        ...prev,
+        name: values.name,
+      }));
+
+      if (shouldUpdatePassword) {
+        setPasswordForm({
+          currentPassword: "",
+          password: "",
+          passwordConfirm: "",
+        });
+      }
+
+      alert(
+        shouldUpdatePassword
+          ? "회원 정보와 비밀번호가 수정되었습니다."
+          : "회원 정보가 수정되었습니다.",
+      );
+    } catch (error) {
+      alert(getSubmitErrorMessage(error));
+    }
   };
 
   return (
@@ -109,18 +275,53 @@ export default function ProfileForm() {
           <ValueText id="profile-email">{form.email}</ValueText>
         </Field>
 
-        <Field>
-          <Label requiredMark>비밀번호</Label>
-          <PasswordSettingButton type="button" onClick={comingSoon}>
-            <span>비밀번호 설정</span>
-            <KeyboardArrowDownRoundedIcon />
-          </PasswordSettingButton>
+        <Field alignStart>
+          <Label htmlFor="profile-current-password">비밀번호</Label>
+
+          <InputWrap>
+            <InputField
+              id="profile-current-password"
+              name="currentPassword"
+              fullWidth
+              type="password"
+              placeholder="현재 비밀번호"
+              size="small"
+              autoComplete="current-password"
+              value={passwordForm.currentPassword}
+              onChange={handlePasswordChange("currentPassword")}
+            />
+
+            <InputField
+              id="profile-password"
+              name="password"
+              fullWidth
+              type="password"
+              placeholder="새 비밀번호"
+              size="small"
+              autoComplete="new-password"
+              value={passwordForm.password}
+              onChange={handlePasswordChange("password")}
+            />
+
+            <InputField
+              id="profile-password-confirm"
+              name="passwordConfirm"
+              fullWidth
+              type="password"
+              placeholder="새 비밀번호 확인"
+              size="small"
+              autoComplete="new-password"
+              value={passwordForm.passwordConfirm}
+              onChange={handlePasswordChange("passwordConfirm")}
+            />
+          </InputWrap>
         </Field>
 
         <Field>
           <Label requiredMark htmlFor="profile-name">
             이름
           </Label>
+
           <InputWrap>
             <InputField
               id="profile-name"
@@ -132,131 +333,6 @@ export default function ProfileForm() {
               onChange={handleChange("name")}
             />
           </InputWrap>
-        </Field>
-
-        <Field>
-          <Label htmlFor="profile-phone">연락처</Label>
-          <InputWrap>
-            <Row>
-              <InputField
-                id="profile-phone"
-                name="phone"
-                fullWidth
-                placeholder="연락처"
-                size="small"
-                value={form.phone}
-                onChange={handleChange("phone")}
-              />
-              <ActionButton type="button" variant="contained" onClick={comingSoon}>
-                변경하기
-              </ActionButton>
-            </Row>
-          </InputWrap>
-        </Field>
-
-        <Field alignStart>
-          <Label>주소</Label>
-          <InputWrap>
-            <Row>
-              <HalfInputField
-                name="zipcode"
-                placeholder="우편번호"
-                size="small"
-                value={form.zipcode}
-                onChange={handleChange("zipcode")}
-              />
-              <SearchAddressButton type="button" variant="outlined" onClick={comingSoon}>
-                주소검색
-              </SearchAddressButton>
-            </Row>
-
-            <InputField
-              name="address1"
-              fullWidth
-              placeholder="기본주소"
-              size="small"
-              value={form.address1}
-              onChange={handleChange("address1")}
-            />
-
-            <InputField
-              name="address2"
-              fullWidth
-              placeholder="나머지 주소"
-              size="small"
-              value={form.address2}
-              onChange={handleChange("address2")}
-            />
-          </InputWrap>
-        </Field>
-
-        <SectionDivider />
-
-        <Field>
-          <Label>생일</Label>
-          <BirthRow>
-            <BirthSelect
-              value={form.birthYear}
-              onChange={(e) => handleSelectChange("birthYear")(e.target.value as string)}
-              IconComponent={KeyboardArrowDownRoundedIcon}
-              displayEmpty
-            >
-              {years.map((year) => (
-                <MenuItem key={year} value={year}>
-                  {year}
-                </MenuItem>
-              ))}
-            </BirthSelect>
-
-            <BirthSelect
-              value={form.birthMonth}
-              onChange={(e) => handleSelectChange("birthMonth")(e.target.value as string)}
-              IconComponent={KeyboardArrowDownRoundedIcon}
-              displayEmpty
-            >
-              {months.map((month) => (
-                <MenuItem key={month} value={month}>
-                  {month}
-                </MenuItem>
-              ))}
-            </BirthSelect>
-
-            <BirthSelect
-              value={form.birthDay}
-              onChange={(e) => handleSelectChange("birthDay")(e.target.value as string)}
-              IconComponent={KeyboardArrowDownRoundedIcon}
-              displayEmpty
-            >
-              {days.map((day) => (
-                <MenuItem key={day} value={day}>
-                  {day}
-                </MenuItem>
-              ))}
-            </BirthSelect>
-          </BirthRow>
-        </Field>
-
-        <Field>
-          <Label>성별</Label>
-          <GenderWrap>
-            <StyledRadioGroup
-              row
-              name="gender"
-              value={form.gender}
-              onChange={(e) => handleSelectChange("gender")(e.target.value)}
-            >
-              <StyledGenderLabel
-                value="남"
-                control={<Radio icon={<RadioIcon />} checkedIcon={<RadioCheckedIcon />} />}
-                label="남"
-              />
-              <StyledGenderLabel
-                value="여"
-                control={<Radio icon={<RadioIcon />} checkedIcon={<RadioCheckedIcon />} />}
-                label="여"
-              />
-            </StyledRadioGroup>
-          </GenderWrap>
         </Field>
 
         <AgreeArea>
@@ -277,6 +353,7 @@ export default function ProfileForm() {
               }
               label="이용약관 및 개인정보 수집 및 이용, 쇼핑정보 수신에 모두 동의합니다."
             />
+
             <StyledFormControlLabel
               checked={agreements.agreeTerms}
               control={
@@ -290,6 +367,7 @@ export default function ProfileForm() {
               }
               label="[필수] 이용약관 동의"
             />
+
             <StyledFormControlLabel
               checked={agreements.agreePrivacy}
               control={
@@ -303,6 +381,7 @@ export default function ProfileForm() {
               }
               label="[필수] 개인정보 수집 및 이용 동의"
             />
+
             <StyledFormControlLabel
               checked={agreements.agreeMarketing}
               control={
@@ -320,15 +399,24 @@ export default function ProfileForm() {
         </AgreeArea>
 
         <BottomRow>
-          <WithdrawButton type="button" onClick={comingSoon}>
+          <WithdrawButton type="button" onClick={handleOpenWithdrawDialog} disabled={isSubmitting}>
             회원탈퇴
           </WithdrawButton>
         </BottomRow>
 
-        <SubmitButton type="submit" fullWidth variant="contained">
-          정보수정
+        <SubmitButton type="submit" fullWidth variant="contained" disabled={isSubmitting}>
+          {isSubmitting ? "수정 중..." : "정보수정하기"}
         </SubmitButton>
       </Form>
+
+      <WithdrawConfirmDialog
+        open={withdrawDialogOpen}
+        password={withdrawPassword}
+        isPending={withdrawMutation.isPending}
+        onClose={handleCloseWithdrawDialog}
+        onPasswordChange={setWithdrawPassword}
+        onConfirm={handleConfirmWithdraw}
+      />
     </Wrap>
   );
 }
@@ -390,7 +478,7 @@ const TitleText = styled(Typography)(({ theme }) => ({
   },
 
   [theme.breakpoints.down("sm")]: {
-    fontSize: "1.0rem",
+    fontSize: "1rem",
   },
 }));
 
@@ -409,7 +497,7 @@ const Field = styled(Box, {
   textAlign: "left",
   marginBottom: "24px",
   display: "flex",
-  alignItems: alignStart ? "flex-start" : "flex-start",
+  alignItems: alignStart ? "flex-start" : "center",
 
   [theme.breakpoints.down("md")]: {
     marginBottom: "20px",
@@ -442,8 +530,6 @@ const Label = styled("label", {
       borderRadius: "100%",
       backgroundColor: "#FF4B4B",
 
-      [theme.breakpoints.down("md")]: {},
-
       [theme.breakpoints.down("sm")]: {
         width: "5px",
         height: "5px",
@@ -469,14 +555,6 @@ const InputWrap = styled("div")(({ theme }) => ({
     maxWidth: "100%",
     width: "100%",
   },
-
-  [theme.breakpoints.down("sm")]: {},
-}));
-
-const Row = styled("div")(() => ({
-  width: "100%",
-  display: "flex",
-  gap: "12px",
 }));
 
 const InputField = styled(TextField)(({ theme }) => ({
@@ -525,223 +603,8 @@ const InputField = styled(TextField)(({ theme }) => ({
   },
 }));
 
-const HalfInputField = styled(InputField)(() => ({
-  maxWidth: "170px",
-}));
-
-const PasswordSettingButton = styled("button")(({ theme }) => ({
-  width: "156px",
-  height: "48px",
-  border: "none",
-  borderBottom: `1px solid ${theme.palette.grey[100]}`,
-  padding: "0 8px 0 18px",
-  background: "transparent",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  cursor: "pointer",
-  color: theme.palette.grey[600],
-  fontSize: "14px",
-  fontWeight: 400,
-
-  "& svg": {
-    fontSize: "20px",
-    color: theme.palette.grey[600],
-  },
-
-  [theme.breakpoints.down("md")]: {
-    height: "42px",
-  },
-
-  [theme.breakpoints.down("sm")]: {
-    width: "100%",
-    height: "38px",
-  },
-}));
-
-const ActionButton = styled(Button)(({ theme }) => ({
-  width: "148px",
-  height: "48px",
-  color: theme.palette.grey[600],
-  background: theme.palette.secondary.main,
-  border: "none",
-  borderRadius: "5px",
-  boxShadow: "none",
-  transition: "all .3s ease",
-
-  "&:hover": {
-    boxShadow: "none",
-    background: theme.palette.primary.main,
-    color: theme.palette.background.default,
-  },
-
-  [theme.breakpoints.down("md")]: {
-    height: "42px",
-  },
-
-  [theme.breakpoints.down("sm")]: {
-    width: "100%",
-    height: "38px",
-  },
-}));
-
-const SearchAddressButton = styled(Button)(({ theme }) => ({
-  width: "148px",
-  height: "48px",
-  borderRadius: "5px",
-  border: "1px solid",
-  boxShadow: "none",
-
-  "&:hover": {
-    boxShadow: "none",
-    background: theme.palette.primary.main,
-    color: theme.palette.background.default,
-  },
-
-  [theme.breakpoints.down("md")]: {
-    width: "130px",
-    height: "42px",
-  },
-
-  [theme.breakpoints.down("sm")]: {
-    width: "100px",
-    height: "38px",
-  },
-}));
-
-const SectionDivider = styled(Box)(({ theme }) => ({
-  width: "calc(100% + 80px)",
-  height: "1px",
-  backgroundColor: theme.palette.grey[100],
-  margin: "30px 0 28px -40px",
-}));
-
-const BirthRow = styled("div")(({ theme }) => ({
-  display: "flex",
-  gap: "12px",
-  maxWidth: "440px",
-  width: "100%",
-
-  [theme.breakpoints.down("md")]: {},
-
-  [theme.breakpoints.down("sm")]: {
-    maxWidth: "100%",
-    width: "100%",
-    gap: "8px",
-  },
-}));
-
-const BirthSelect = styled(Select)(({ theme }) => ({
-  width: "33%",
-  height: "48px",
-  borderRadius: "5px",
-  backgroundColor: theme.palette.common.white,
-  fontSize: "14px",
-  color: theme.palette.grey[600],
-
-  "& .MuiOutlinedInput-notchedOutline": {
-    borderColor: theme.palette.grey[100],
-  },
-
-  "& .MuiSelect-select": {
-    padding: "12px 40px 12px 18px",
-  },
-
-  "& .MuiSvgIcon-root": {
-    fontSize: "1.375rem",
-    color: theme.palette.grey[600],
-    right: "10px",
-  },
-
-  [theme.breakpoints.down("md")]: {
-    height: "42px",
-  },
-
-  [theme.breakpoints.down("sm")]: {
-    height: "38px",
-
-    "& .MuiSvgIcon-root": {
-      fontSize: "16px",
-    },
-  },
-}));
-
-const GenderWrap = styled(Box)(() => ({
-  width: "calc(100% - 132px)",
-}));
-
-const StyledRadioGroup = styled(RadioGroup)(({ theme }) => ({
-  gap: "24px",
-
-  [theme.breakpoints.down("md")]: {
-    gap: "20px",
-  },
-
-  [theme.breakpoints.down("sm")]: {
-    gap: "16px",
-  },
-}));
-
-const StyledGenderLabel = styled(FormControlLabel)(({ theme }) => ({
-  margin: "0px",
-
-  "& .MuiFormControlLabel-label": {
-    fontSize: "14px",
-    color: theme.palette.grey[600],
-  },
-}));
-
-const RadioIcon = styled("span")(({ theme }) => ({
-  width: "16px",
-  height: "16px",
-  borderRadius: "100%",
-  border: `1px solid ${theme.palette.grey[300]}`,
-  display: "inline-block",
-  boxSizing: "border-box",
-
-  [theme.breakpoints.down("md")]: {
-    width: "12px",
-    height: "12px",
-  },
-
-  [theme.breakpoints.down("sm")]: {},
-}));
-
-const RadioCheckedIcon = styled("span")(({ theme }) => ({
-  width: "16px",
-  height: "16px",
-  borderRadius: "100%",
-  border: `1px solid ${theme.palette.primary.main}`,
-  background: theme.palette.common.white,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  boxSizing: "border-box",
-
-  "&::after": {
-    content: '""',
-    width: "10px",
-    height: "10px",
-    borderRadius: "100%",
-    backgroundColor: theme.palette.primary.main,
-  },
-
-  [theme.breakpoints.down("md")]: {
-    width: "12px",
-    height: "12px",
-
-    "&::after": {
-      width: "8px",
-      height: "8px",
-    },
-  },
-
-  [theme.breakpoints.down("sm")]: {},
-}));
-
 const AgreeArea = styled(Box)(({ theme }) => ({
   marginTop: "40px",
-
   display: "flex",
   flexDirection: "column",
   gap: "25px",
@@ -797,7 +660,6 @@ const StyledFormControlLabel = styled(FormControlLabel, {
   },
 }));
 
-// 체크박스 아이콘
 const CircleIcon = styled("span")(({ theme }) => ({
   width: "24px",
   height: "24px",
@@ -874,6 +736,11 @@ const WithdrawButton = styled("button")(({ theme }) => ({
   color: theme.palette.grey[600],
   textDecoration: "underline",
   textUnderlineOffset: "2px",
+
+  "&:disabled": {
+    cursor: "not-allowed",
+    opacity: 0.5,
+  },
 }));
 
 const SubmitButton = styled(Button)(({ theme }) => ({
