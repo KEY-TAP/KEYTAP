@@ -1,5 +1,5 @@
 // 클라이언트 전용 API (Client Component에서만 사용)
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/api/supabaseClient";
 
 // 상품 삭제
 export async function deleteProductClient(productId: number) {

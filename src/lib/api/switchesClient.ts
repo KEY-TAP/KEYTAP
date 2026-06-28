@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/api/supabaseClient";
 
 // 스위치 등록
 export async function createSwitchClient(payload: { switch_name: string; switch_type: string; manufacture: string }) {
