@@ -1,9 +1,13 @@
 // Header
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+// supabase
+import { supabase } from "@/api/supabaseClient";
 
 // mui
 import AppBar from "@mui/material/AppBar";
@@ -20,16 +24,51 @@ import logoImage from "../../../public/logo.png";
 // import Nav from "./Nav";
 
 export default function Header() {
+  const router = useRouter();
+
   const [isLogin, setIsLogin] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const handleAuthClick = () => {
+  // 로그인 상태 확인
+  useEffect(() => {
+    const getCurrentSession = async () => {
+      const { data } = await supabase.auth.getSession();
+
+      setIsLogin(!!data.session);
+    };
+
+    getCurrentSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLogin(!!session);
+
+      if (!session) {
+        setIsMenuOpen(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleAuthClick = async () => {
     if (isLogin) {
-      setIsLogin(false);
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        alert("로그아웃 중 오류가 발생했습니다.");
+        return;
+      }
+
       setIsMenuOpen(false);
-    } else {
-      setIsLogin(true);
+      router.push("/MainPage");
+      return;
     }
+
+    router.push("/LoginPage");
   };
 
   const handleUserMenuToggle = () => {
@@ -51,20 +90,19 @@ export default function Header() {
           {/* <Nav /> */}
 
           {/* 유저 */}
-
           <UserWrap>
             {isLogin && (
               <UserMenuBox>
-                <ButtonWrap onClick={handleUserMenuToggle}>
+                <ButtonWrap type="button" onClick={handleUserMenuToggle}>
                   <PersonOutlineIcon />
                 </ButtonWrap>
 
                 {isMenuOpen && (
                   <DropdownMenu>
-                    <Link href="/my" onClick={() => setIsMenuOpen(false)}>
+                    <Link href="/MyPage" onClick={() => setIsMenuOpen(false)}>
                       <Typography variant="body1">마이페이지</Typography>
                     </Link>
-                    <Link href="/wishlist" onClick={() => setIsMenuOpen(false)}>
+                    <Link href="/WishListPage" onClick={() => setIsMenuOpen(false)}>
                       <Typography variant="body1">찜목록</Typography>
                     </Link>
                   </DropdownMenu>
@@ -72,16 +110,13 @@ export default function Header() {
               </UserMenuBox>
             )}
 
-            <Link
-              href="#"
+            <ButtonWrap
+              type="button"
               aria-label={isLogin ? "로그아웃" : "로그인"}
-              onClick={(e) => {
-                e.preventDefault();
-                handleAuthClick();
-              }}
+              onClick={handleAuthClick}
             >
               <Typography variant="body2">{isLogin ? "로그아웃" : "로그인"}</Typography>
-            </Link>
+            </ButtonWrap>
           </UserWrap>
         </HeaderInner>
       </Containers>
@@ -169,7 +204,6 @@ const UserWrap = styled("div")(({ theme }) => ({
   gap: "25px",
 
   borderRight: "1px solid #bbb",
-  // borderLeft: "1px solid #bbb",
 
   "& a": {
     transition: "all .3s ease",
@@ -208,11 +242,21 @@ const ButtonWrap = styled(Button)(({ theme }) => ({
     fill: theme.palette.grey[900],
   },
 
+  "& p": {
+    color: theme.palette.grey[800],
+    fontSize: "1.125rem",
+    fontWeight: "400",
+  },
+
   "&:hover": {
     background: "none",
 
     "& svg": {
       fill: theme.palette.primary.main,
+    },
+
+    "& p": {
+      color: theme.palette.primary.main,
     },
   },
 }));
