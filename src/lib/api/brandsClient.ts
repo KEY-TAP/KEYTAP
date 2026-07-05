@@ -1,4 +1,4 @@
-import { supabase } from "@/api/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 //브랜드 등록
 export async function createBrandClient(brandName: string) {
