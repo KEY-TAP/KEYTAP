@@ -1,6 +1,6 @@
 // 유저 이메일과 비밀번호를 사용하여 로그인하는 API
 
-import { supabase } from "@/api/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import type { LoginFormValues } from "@/schemas/auth/loginSchema";
 
 type SignInWithEmailResult = {

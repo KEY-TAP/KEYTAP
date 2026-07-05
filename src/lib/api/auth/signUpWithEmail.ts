@@ -1,6 +1,6 @@
 // 유저 이메일과 비밀번호를 사용하여 회원가입하는 API
 
-import { supabase } from "@/api/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import type { SignUpFormValues } from "@/schemas/auth/signUpSchema";
 
 type SignUpWithEmailResult = {
@@ -29,11 +29,7 @@ export async function signUpWithEmail(values: SignUpFormValues): Promise<SignUpW
   if (authError) {
     const message = authError.message.toLowerCase();
 
-    if (
-      message.includes("already registered") ||
-      message.includes("already been registered") ||
-      message.includes("user already registered")
-    ) {
+    if (message.includes("already registered") || message.includes("already been registered") || message.includes("user already registered")) {
       throw new Error("이미 가입된 이메일 입니다.");
     }
 

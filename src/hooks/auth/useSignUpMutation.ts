@@ -3,7 +3,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { signUpWithEmail } from "@/api/auth/signUpWithEmail";
+import { signUpWithEmail } from "@/lib/api/auth/signUpWithEmail";
 
 export function useSignUpMutation() {
   return useMutation({

@@ -1,6 +1,6 @@
 // 유저 계정을 탈퇴하는 API
 
-import { supabase } from "@/api/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 export type WithdrawPayload = {
   password: string;

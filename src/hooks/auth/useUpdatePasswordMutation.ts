@@ -3,7 +3,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { updatePassword } from "@/api/auth/updatePassword";
+import { updatePassword } from "@/lib/api/auth/updatePassword";
 
 export function useUpdatePasswordMutation() {
   return useMutation({
