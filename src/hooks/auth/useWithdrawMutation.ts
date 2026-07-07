@@ -3,7 +3,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { withdraw } from "@/api/auth/withdraw";
+import { withdraw } from "@/lib/api/auth/withdraw";
 
 export function useWithdrawMutation() {
   const queryClient = useQueryClient();

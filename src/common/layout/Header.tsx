@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 // supabase
-import { supabase } from "@/api/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 // mui
 import AppBar from "@mui/material/AppBar";
@@ -110,11 +110,7 @@ export default function Header() {
               </UserMenuBox>
             )}
 
-            <ButtonWrap
-              type="button"
-              aria-label={isLogin ? "로그아웃" : "로그인"}
-              onClick={handleAuthClick}
-            >
+            <ButtonWrap type="button" aria-label={isLogin ? "로그아웃" : "로그인"} onClick={handleAuthClick}>
               <Typography variant="body2">{isLogin ? "로그아웃" : "로그인"}</Typography>
             </ButtonWrap>
           </UserWrap>

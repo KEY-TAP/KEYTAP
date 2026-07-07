@@ -3,7 +3,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getMyProfile } from "@/api/auth/getMyProfile";
+import { getMyProfile } from "@/lib/api/auth/getMyProfile";
 
 export function useMyProfileQuery() {
   return useQuery({

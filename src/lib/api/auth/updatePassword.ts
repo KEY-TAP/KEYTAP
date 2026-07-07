@@ -1,6 +1,6 @@
 // 유저 비밀번호를 업데이트하는 API
 
-import { supabase } from "@/api/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 export type UpdatePasswordPayload = {
   currentPassword: string;

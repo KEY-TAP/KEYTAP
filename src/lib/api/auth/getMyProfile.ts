@@ -1,6 +1,6 @@
 // 유저 프로필 정보를 가져오는 API
 
-import { supabase } from "@/api/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 export type MyProfile = {
   email: string;
@@ -23,21 +23,13 @@ export async function getMyProfile(): Promise<MyProfile> {
     throw new Error("로그인 정보를 가져오지 못했습니다.");
   }
 
-  const { data: profileData, error: profileError } = await supabase
-    .from("user_profiles")
-    .select("name, phone, birth_date, gender")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const { data: profileData, error: profileError } = await supabase.from("user_profiles").select("name, phone, birth_date, gender").eq("user_id", user.id).maybeSingle();
 
   if (profileError) {
     throw new Error(profileError.message);
   }
 
-  const { data: agreementData, error: agreementError } = await supabase
-    .from("user_agreements")
-    .select("terms_of_service, privacy_policy, marketing")
-    .eq("fk_user_id", user.id)
-    .maybeSingle();
+  const { data: agreementData, error: agreementError } = await supabase.from("user_agreements").select("terms_of_service, privacy_policy, marketing").eq("fk_user_id", user.id).maybeSingle();
 
   if (agreementError) {
     throw new Error(agreementError.message);
