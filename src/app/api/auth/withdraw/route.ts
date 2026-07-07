@@ -1,5 +1,5 @@
 // 회원탈퇴 서버 API 라우트
-// 탈퇴 후 메인으로 이동
+// 비밀번호 재확인 후 Supabase Auth 유저와 profiles 데이터를 삭제
 
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -104,9 +104,9 @@ export async function POST(request: NextRequest) {
     let deleteUserError = await deleteAuthUser();
 
     /**
-     profiles 테이블이 auth.users를 참조하고 있는데
-     on delete cascade가 없으면 Auth 유저 삭제가 FK constraint 때문에 실패할 수 있음.
-     그 경우 profiles를 먼저 삭제하고 Auth 유저 삭제를 한 번 더 시도.
+     * profiles 테이블이 auth.users를 참조하고 있는데
+     * on delete cascade가 없으면 Auth 유저 삭제가 FK constraint 때문에 실패할 수 있음.
+     * 그 경우 profiles를 먼저 삭제하고 Auth 유저 삭제를 한 번 더 시도.
      */
     if (deleteUserError && isConstraintError(deleteUserError.message)) {
       const profileDeleteError = await deleteProfile();
