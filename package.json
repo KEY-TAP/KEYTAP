@@ -25,12 +25,9 @@
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-<<<<<<< HEAD
     "recharts": "^3.9.1",
-=======
     "recharts": "^3.8.1",
     "server-only": "^0.0.1",
->>>>>>> ecff8c9bc453ae6b9934b851b2edbb419a57491b
     "zod": "^4.3.6"
   },
   "devDependencies": {
