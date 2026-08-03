@@ -45,57 +45,110 @@ export default function BrandRegisterModal({ open, onClose, onSuccess }: Props) 
       open: true면 모달 표시, false면 숨김
       onClose: 모달 바깥 클릭하거나 ESC 누르면 닫힘
     */
-    <Modal open={open} onClose={handleClose}>
+    <ModalContent open={open} onClose={handleClose}>
       <ModalBox>
         {/* 모달 헤더 */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
-          <Typography variant="h6" fontWeight="bold">
-            브랜드 등록
-          </Typography>
-          <IconButton size="small" onClick={handleClose}>
-            <CloseIcon fontSize="small" />
+        <ModalHeader>
+          <ModalTitle>브랜드 등록</ModalTitle>
+          <IconButton onClick={handleClose}>
+            <CloseIcon />
           </IconButton>
-        </Box>
+        </ModalHeader>
 
         {/* 입력 필드 */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ minWidth: 56 }}>
-            브랜드명
-          </Typography>
-          <TextField
+        <ModalInputField>
+          <ModalInputLabel>브랜드명</ModalInputLabel>
+          <ModalInput
             fullWidth
-            size="small"
             placeholder="브랜드명을 입력해주세요."
             value={brandName}
             onChange={(e) => setBrandName(e.target.value)}
             // 엔터 키로도 등록 가능
             onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
           />
-        </Box>
+        </ModalInputField>
 
         {/* 버튼 */}
-        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+        <ButtonWrap>
           <Button variant="outlined" onClick={handleClose}>
             취소
           </Button>
           <Button variant="contained" onClick={handleSubmit} disabled={loading}>
             {loading ? "등록 중..." : "등록"}
           </Button>
-        </Box>
+        </ButtonWrap>
       </ModalBox>
-    </Modal>
+    </ModalContent>
   );
 }
 
-// MUI Modal은 position fixed로 화면 중앙에 띄워야 함
+const ModalContent = styled(Modal)({
+  backgroundColor: "rgba(0, 0, 0, 0.66)",
+});
+
 const ModalBox = styled(Box)(({ theme }) => ({
   position: "absolute",
   top: "50%",
   left: "50%",
-  transform: "translate(-50%, -50%)", // 정확한 중앙 정렬
-  width: 480,
-  backgroundColor: theme.palette.background.default,
-  borderRadius: "12px",
-  padding: "24px",
-  boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+  transform: "translate(-50%, -50%)",
+  width: 1000,
+  backgroundColor: theme.palette.background.paper,
+  borderRadius: "10px",
+  padding: "28px",
+  boxSizing: "border-box",
 }));
+
+const ModalHeader = styled(Box)(({ theme }) => ({
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: "46px",
+
+  "& .MuiIconButton-root": {
+    color: theme.palette.grey[900],
+  },
+}));
+
+const ModalTitle = styled(Typography)({
+  fontSize: "1.5rem",
+  fontWeight: 500,
+});
+
+const ModalInputField = styled(Box)({
+  width: "100%",
+
+  display: "flex",
+  alignItems: "center",
+  gap: "30px",
+
+  marginBottom: "74px",
+});
+
+const ModalInputLabel = styled(Typography)({
+  maxWidth: "130px",
+  fontSize: "1rem",
+  fontWeight: 300,
+});
+
+const ModalInput = styled(TextField)({
+  width: "calc(100% - 160px)",
+  maxWidth: "666px",
+  borderRadius: "5px",
+});
+
+const ButtonWrap = styled(Box)({
+  display: "flex",
+  justifyContent: "flex-end",
+  gap: "10px",
+
+  "& .MuiButton-root": {
+    width: "200px",
+    height: "48px",
+    padding: "15px",
+    boxSizing: "border-box",
+    borderRadius: "5px",
+
+    fontSize: "1.125rem",
+    fontWeight: 500,
+  },
+});

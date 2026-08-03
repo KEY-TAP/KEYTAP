@@ -11,7 +11,11 @@ import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import Button from "@mui/material/Button";
-import { createSwitchClient, updateSwitchClient, uploadSoundClient } from "@/lib/api/switchesClient";
+import {
+  createSwitchClient,
+  updateSwitchClient,
+  uploadSoundClient,
+} from "@/lib/api/switchesClient";
 import SoundUpload from "./SoundUpload";
 
 interface Sound {
@@ -29,10 +33,9 @@ interface SwitchData {
 }
 
 interface Props {
-  switchData?: SwitchData; // 없으면 등록 모드, 있으면 수정 모드
+  switchData?: SwitchData;
 }
 
-// 사운드 파일 + 타입을 묶어서 관리하는 타입
 interface SoundFile {
   file: File;
   soundType: "single" | "long";
@@ -40,9 +43,8 @@ interface SoundFile {
 
 export default function SwitchForm({ switchData }: Props) {
   const router = useRouter();
-  const isEdit = !!switchData; // switchData 있으면 수정 모드
+  const isEdit = !!switchData;
 
-  // 기존 데이터 있으면 초기값으로 설정, 없으면 빈 값
   const [switchName, setSwitchName] = useState(switchData?.switch_name ?? "");
   const [switchType, setSwitchType] = useState(switchData?.switch_type ?? "");
   const [manufacture, setManufacture] = useState(switchData?.manufacture ?? "");
@@ -53,21 +55,23 @@ export default function SwitchForm({ switchData }: Props) {
     if (!switchName || !switchType) return;
 
     setLoading(true);
+
     try {
       if (isEdit && switchData) {
-        // 수정 모드: 스위치 정보 업데이트
         await updateSwitchClient(switchData.switch_id, {
           switch_name: switchName,
           switch_type: switchType,
           manufacture,
         });
 
-        // 새로 추가된 사운드 파일 업로드
         if (soundFiles.length > 0) {
-          await Promise.all(soundFiles.map((s) => uploadSoundClient(s.file, switchData.switch_id, s.soundType)));
+          await Promise.all(
+            soundFiles.map((sound) =>
+              uploadSoundClient(sound.file, switchData.switch_id, sound.soundType),
+            ),
+          );
         }
       } else {
-        // 등록 모드: 스위치 먼저 등록 후 사운드 업로드
         const created = await createSwitchClient({
           switch_name: switchName,
           switch_type: switchType,
@@ -75,7 +79,11 @@ export default function SwitchForm({ switchData }: Props) {
         });
 
         if (soundFiles.length > 0) {
-          await Promise.all(soundFiles.map((s) => uploadSoundClient(s.file, created.switch_id, s.soundType)));
+          await Promise.all(
+            soundFiles.map((sound) =>
+              uploadSoundClient(sound.file, created.switch_id, sound.soundType),
+            ),
+          );
         }
       }
 
@@ -88,71 +96,179 @@ export default function SwitchForm({ switchData }: Props) {
   return (
     <FormWrap>
       <Section>
-        <Typography variant="h6" fontWeight="bold" mb={2}>
-          스위치 정보
-        </Typography>
+        <SectionTitle variant="h6">스위치 정보</SectionTitle>
 
         <FieldRow>
           <Label>스위치명</Label>
-          <TextField fullWidth size="small" placeholder="스위치명을 입력해주세요." value={switchName} onChange={(e) => setSwitchName(e.target.value)} />
+
+          <FormTextField
+            placeholder="스위치명을 입력해주세요."
+            value={switchName}
+            onChange={(event) => setSwitchName(event.target.value)}
+          />
         </FieldRow>
 
         <FieldRow>
           <Label>스위치 타입</Label>
-          <FormControl fullWidth size="small">
+
+          <SwitchFormControl>
             <InputLabel>스위치 타입 불러오기</InputLabel>
-            <Select value={switchType} label="스위치 타입 불러오기" onChange={(e) => setSwitchType(e.target.value)}>
+
+            <Select
+              value={switchType}
+              label="스위치 타입 불러오기"
+              onChange={(event) => setSwitchType(event.target.value)}
+            >
               <MenuItem value="linear">리니어</MenuItem>
               <MenuItem value="tactile">택타일</MenuItem>
               <MenuItem value="clicky">클리키</MenuItem>
             </Select>
-          </FormControl>
+          </SwitchFormControl>
         </FieldRow>
 
         <FieldRow>
           <Label>제조사</Label>
-          <TextField fullWidth size="small" placeholder="제조사를 입력해주세요." value={manufacture} onChange={(e) => setManufacture(e.target.value)} />
+
+          <FormTextField
+            placeholder="제조사를 입력해주세요."
+            value={manufacture}
+            onChange={(event) => setManufacture(event.target.value)}
+          />
         </FieldRow>
       </Section>
 
-      {/*
-        soundFiles: SwitchForm이 가진 사운드 파일 상태
-        onChange: SoundUpload에서 파일 변경시 SwitchForm 상태 업데이트
-      */}
-      <SoundUpload soundFiles={soundFiles} onChange={setSoundFiles} />
+      <Section>
+        <SoundTitle variant="h6">스위치 사운드</SoundTitle>
 
-      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 4 }}>
-        <Button variant="outlined" onClick={() => router.push("/admin/switches")}>
+        <SoundUpload soundFiles={soundFiles} onChange={setSoundFiles} />
+      </Section>
+
+      <BottomActions>
+        <SecondaryActionButton
+          type="button"
+          variant="outlined"
+          onClick={() => router.push("/admin/switches")}
+        >
           취소
-        </Button>
-        <Button variant="outlined">임시 저장</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
+        </SecondaryActionButton>
+
+        <SecondaryActionButton type="button" variant="outlined">
+          임시 저장
+        </SecondaryActionButton>
+
+        <PrimaryActionButton
+          type="button"
+          variant="contained"
+          disableElevation
+          onClick={handleSubmit}
+          disabled={loading}
+        >
           {loading ? "등록 중..." : isEdit ? "수정 완료" : "스위치 등록"}
-        </Button>
-      </Box>
+        </PrimaryActionButton>
+      </BottomActions>
     </FormWrap>
   );
 }
 
-const FormWrap = styled(Box)(() => ({ maxWidth: 800 }));
+const FormWrap = styled(Box)({});
 
-const Section = styled(Box)(({ theme }) => ({
-  marginBottom: "32px",
-  padding: "24px",
-  backgroundColor: theme.palette.background.default,
-  borderRadius: "12px",
-  boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+const Section = styled(Box)({
+  marginBottom: "60px",
+});
+
+const SectionTitle = styled(Typography)(({ theme }) => ({
+  marginBottom: "24px",
+  fontSize: "1.25rem",
+  fontWeight: 400,
+  color: theme.palette.grey[800],
 }));
 
-const FieldRow = styled(Box)(() => ({
+const SoundTitle = styled(Typography)(({ theme }) => ({
+  marginBottom: "8px",
+  fontSize: "1.25rem",
+  fontWeight: 400,
+  color: theme.palette.grey[800],
+}));
+
+const FieldRow = styled(Box)({
   display: "flex",
   alignItems: "center",
-  gap: "16px",
+  gap: "10px",
+  maxWidth: "800px",
   marginBottom: "16px",
-}));
+});
 
 const Label = styled(Typography)(({ theme }) => ({
-  minWidth: "80px",
-  fontSize: "0.875rem",
+  minWidth: "130px",
   color: theme.palette.text.secondary,
+  fontSize: "1rem",
+  fontWeight: 400,
+}));
+
+const FormTextField = styled(TextField)({
+  width: "100%",
+
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "5px",
+  },
+});
+
+const SwitchFormControl = styled(FormControl)({
+  width: "100%",
+
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "5px",
+  },
+});
+
+const BottomActions = styled(Box)({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "100%",
+  gap: "10px",
+  marginTop: "80px",
+  boxSizing: "border-box",
+});
+
+const ActionButton = styled(Button)({
+  width: "200px",
+  height: "56px",
+  padding: "16px 20px",
+  boxSizing: "border-box",
+  borderRadius: "5px",
+  fontSize: "1.25rem",
+  fontWeight: 400,
+  textTransform: "none",
+  transition: "all .3s ease",
+});
+
+const SecondaryActionButton = styled(ActionButton)(({ theme }) => ({
+  border: `1px solid ${theme.palette.divider}`,
+  color: theme.palette.grey[800],
+  backgroundColor: theme.palette.background.default,
+
+  "&:hover": {
+    borderColor: theme.palette.primary.main,
+    color: theme.palette.background.default,
+    backgroundColor: theme.palette.primary.main,
+  },
+}));
+
+const PrimaryActionButton = styled(ActionButton)(({ theme }) => ({
+  border: `1px solid ${theme.palette.primary.main}`,
+  color: theme.palette.common.white,
+  backgroundColor: theme.palette.primary.main,
+
+  "&:hover": {
+    border: `1px solid ${theme.palette.primary.main}`,
+    color: theme.palette.primary.main,
+    backgroundColor: theme.palette.background.default,
+  },
+
+  "&.Mui-disabled": {
+    borderColor: theme.palette.grey[300],
+    color: theme.palette.common.white,
+    backgroundColor: theme.palette.grey[300],
+  },
 }));

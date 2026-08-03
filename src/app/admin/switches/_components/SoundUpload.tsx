@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+
+// mui
 import { styled } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -23,122 +25,219 @@ interface Props {
 export default function SoundUpload({ soundFiles, onChange }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 체크된 항목 인덱스 목록 (선택 삭제용)
+  // 체크된 항목 인덱스 목록
   const [checkedIndexes, setCheckedIndexes] = useState<number[]>([]);
 
   const handleAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? []);
-    // 새 파일은 기본 soundType을 'single'로 설정
+
     const newFiles: SoundFile[] = selected.map((file) => ({
       file,
       soundType: "single",
     }));
+
     onChange([...soundFiles, ...newFiles]);
+
     e.target.value = "";
   };
 
-  // 체크박스 토글
   const handleCheck = (index: number) => {
-    setCheckedIndexes(
-      (prev) =>
-        prev.includes(index)
-          ? prev.filter((i) => i !== index) // 이미 체크됐으면 제거
-          : [...prev, index], // 안 체크됐으면 추가
+    setCheckedIndexes((prev) =>
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
     );
   };
 
-  // 선택된 항목만 삭제
   const handleDeleteSelected = () => {
-    onChange(soundFiles.filter((_, i) => !checkedIndexes.includes(i)));
-    setCheckedIndexes([]); // 체크 상태 초기화
+    onChange(soundFiles.filter((_, index) => !checkedIndexes.includes(index)));
+
+    setCheckedIndexes([]);
   };
 
-  // 특정 파일의 soundType 변경
   const handleTypeChange = (index: number, soundType: "single" | "long") => {
-    const updated = soundFiles.map((s, i) => (i === index ? { ...s, soundType } : s));
+    const updated = soundFiles.map((sound, i) =>
+      i === index
+        ? {
+            ...sound,
+            soundType,
+          }
+        : sound,
+    );
+
     onChange(updated);
   };
 
   return (
-    <Section>
-      <Typography variant="h6" fontWeight="bold" mb={2}>
-        사운드
-      </Typography>
+    <SoundUploadWrap>
+      <UploadGuide variant="caption">
+        MP3 형식의 사운드 파일을 등록할 수 있습니다.
+        <br />
+        사운드 유형을 Single 또는 Long으로 선택해주세요.
+      </UploadGuide>
 
-      <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
+      <UploadActions>
         <Button variant="outlined" size="small" onClick={() => inputRef.current?.click()}>
           사운드 추가
         </Button>
-        {/* 체크된 항목이 있을 때만 버튼 활성화 */}
-        <Button variant="outlined" size="small" color="error" disabled={checkedIndexes.length === 0} onClick={handleDeleteSelected}>
+
+        <Button
+          variant="outlined"
+          size="small"
+          color="error"
+          disabled={checkedIndexes.length === 0}
+          onClick={handleDeleteSelected}
+        >
           선택 삭제
         </Button>
-        {/* .mp3 파일만 선택 가능 */}
-        <input ref={inputRef} type="file" accept=".mp3,audio/mpeg" multiple hidden onChange={handleAdd} />
-      </Box>
+
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".mp3,audio/mpeg"
+          multiple
+          hidden
+          onChange={handleAdd}
+        />
+      </UploadActions>
 
       {soundFiles.length > 0 && (
         <SoundList>
-          {/* 헤더 행 */}
           <SoundRow>
-            <Box sx={{ width: 32 }} />
-            <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
-              미리듣기
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ width: 200 }}>
-              사운드 유형
-            </Typography>
+            <CheckboxHeaderCell />
+
+            <PreviewHeaderText>미리듣기</PreviewHeaderText>
+
+            <SoundTypeHeaderText>사운드 유형</SoundTypeHeaderText>
           </SoundRow>
 
-          {soundFiles.map((s, index) => (
+          {soundFiles.map((sound, index) => (
             <SoundRow key={index}>
-              {/* 체크박스 선택 = 선택 삭제 대상 */}
-              <Checkbox size="small" sx={{ width: 32 }} checked={checkedIndexes.includes(index)} onChange={() => handleCheck(index)} />
+              <DeleteCheckbox
+                size="small"
+                checked={checkedIndexes.includes(index)}
+                onChange={() => handleCheck(index)}
+              />
 
-              <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 1 }}>
-                {/* 브라우저 기본 오디오 플레이어로 미리듣기 */}
-                <audio controls src={URL.createObjectURL(s.file)} style={{ height: 32 }} />
-                <Typography variant="caption" color="text.secondary">
-                  {s.file.name}
-                </Typography>
-              </Box>
+              <PreviewCell>
+                <AudioPlayer controls src={URL.createObjectURL(sound.file)} />
 
-              {/* 사운드 유형 선택 (single/long) */}
-              <FormControl size="small" sx={{ width: 200 }}>
-                <Select value={s.soundType} onChange={(e) => handleTypeChange(index, e.target.value as "single" | "long")}>
+                <FileName variant="caption">{sound.file.name}</FileName>
+              </PreviewCell>
+
+              <SoundTypeFormControl size="small">
+                <Select
+                  value={sound.soundType}
+                  onChange={(event) =>
+                    handleTypeChange(index, event.target.value as "single" | "long")
+                  }
+                >
                   <MenuItem value="single">Single</MenuItem>
+
                   <MenuItem value="long">Long</MenuItem>
                 </Select>
-              </FormControl>
+              </SoundTypeFormControl>
             </SoundRow>
           ))}
         </SoundList>
       )}
-    </Section>
+    </SoundUploadWrap>
   );
 }
 
-const Section = styled(Box)(({ theme }) => ({
-  marginBottom: "32px",
-  padding: "24px",
-  backgroundColor: theme.palette.background.default,
-  borderRadius: "12px",
-  boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+const SoundUploadWrap = styled(Box)({
+  width: "100%",
+});
+
+const UploadGuide = styled(Typography)(({ theme }) => ({
+  display: "block",
+  marginBottom: "20px",
+  fontSize: "1rem",
+  color: theme.palette.text.secondary,
 }));
 
-const SoundList = styled(Box)(({ theme }) => ({
-  border: `1px solid ${theme.palette.divider}`,
-  borderRadius: "8px",
-  overflow: "hidden",
-}));
+const UploadActions = styled(Box)({
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  marginBottom: "40px",
+
+  "& Button": {
+    width: "120px",
+    height: "40px",
+    padding: "10px",
+    borderRadius: "5px",
+    fontSize: "1rem",
+    textAlign: "center",
+  },
+});
+
+const SoundList = styled(Box)({
+  width: "100%",
+});
 
 const SoundRow = styled(Box)(({ theme }) => ({
   display: "flex",
   alignItems: "center",
   gap: "12px",
   padding: "8px 12px",
-  borderBottom: `1px solid ${theme.palette.divider}`,
-  "&:last-child": {
-    borderBottom: "none",
+  borderBottom: "none",
+  fontSize: "1rem",
+  color: theme.palette.grey[500],
+
+  "&:first-child": {
+    borderBottom: `1px solid ${theme.palette.divider}`,
   },
 }));
+
+const CheckboxHeaderCell = styled(Box)({
+  flexShrink: 0,
+  width: "32px",
+});
+
+const PreviewHeaderText = styled(Typography)(({ theme }) => ({
+  flex: 1,
+  color: theme.palette.text.secondary,
+}));
+
+const SoundTypeHeaderText = styled(Typography)(({ theme }) => ({
+  flexShrink: 0,
+  width: "200px",
+  color: theme.palette.text.secondary,
+}));
+
+const DeleteCheckbox = styled(Checkbox)({
+  flexShrink: 0,
+  width: "32px",
+});
+
+const PreviewCell = styled(Box)({
+  display: "flex",
+  flex: 1,
+  alignItems: "center",
+  gap: "10px",
+  minWidth: 0,
+  padding: "14px 0",
+});
+
+const AudioPlayer = styled("audio")({
+  flexShrink: 0,
+  width: "300px",
+  height: "40px",
+});
+
+const FileName = styled(Typography)(({ theme }) => ({
+  overflow: "hidden",
+  flex: 1,
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  fontSize: "1rem",
+  color: theme.palette.grey[500],
+}));
+
+const SoundTypeFormControl = styled(FormControl)({
+  flexShrink: 0,
+  width: "200px",
+
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "5px",
+  },
+});
