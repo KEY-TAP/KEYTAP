@@ -1,20 +1,53 @@
 "use client";
 
-import { styled } from "@mui/material/styles";
+import type { ReactNode } from "react";
+
 import Box from "@mui/material/Box";
+import { styled } from "@mui/material/styles";
 
-interface Props {
-  children: React.ReactNode;
+interface ChartBoxProps {
+  title: string;
+  children: ReactNode;
 }
 
-export default function ChartBox({ children }: Props) {
-  return <StyledBox>{children}</StyledBox>;
+export default function ChartBox({ title, children }: ChartBoxProps) {
+  return (
+    <ChartContainer>
+      <ChartTitle>{title}</ChartTitle>
+
+      <ChartContent>{children}</ChartContent>
+    </ChartContainer>
+  );
 }
 
-const StyledBox = styled(Box)(({ theme }) => ({
+const ChartContainer = styled(Box)(() => ({
+  display: "flex",
+  flexDirection: "column",
+
+  width: "100%",
+  padding: "0 20px 0 0",
+  boxSizing: "border-box",
+
+  overflow: "hidden",
+}));
+
+const ChartTitle = styled("h2")(({ theme }) => ({
+  ...theme.typography.body2,
+
+  margin: 0,
+  marginBottom: "50px",
+  fontSize: "1rem",
+  fontWeight: "400",
+  color: theme.palette.grey[600],
+}));
+
+const ChartContent = styled(Box)(() => ({
+  position: "relative",
   flex: 1,
-  backgroundColor: theme.palette.background.default,
-  borderRadius: "12px",
-  padding: "24px",
-  boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+
+  width: "100%",
+  minWidth: 0,
+  minHeight: 0,
+
+  overflow: "hidden",
 }));

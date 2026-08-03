@@ -1,58 +1,90 @@
 "use client";
 
-import { styled } from "@mui/material/styles";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import StatCard from "./StatCard";
+import { styled } from "@mui/material/styles";
+
+import ChartBox from "./ChartBox";
+import Header from "./Header";
 import PlayChart from "./PlayChart";
 import PopularProducts from "./PopularProducts";
-import ChartBox from "./ChartBox";
+import StatCard from "./StatCard";
 
-// page.tsx에서 넘겨주는 props 타입 정의
-interface Props {
-  stats: {
-    todayUsers: number;
-    totalUsers: number;
-    todayPlays: number;
-  };
-  chartData: { date: string; count: number }[];
-  popularProducts: { name: string; brand: string; count: number }[];
+interface DashboardStats {
+  todayVisitors: number;
+  totalUsers: number;
+  todaySignups: number;
+  todayPlays: number;
 }
 
-export default function DashboardLayout({ stats, chartData, popularProducts }: Props) {
+interface ChartData {
+  date: string;
+  count: number;
+}
+
+interface PopularProduct {
+  name: string;
+  brand: string;
+  count: number;
+}
+
+interface DashboardLayoutProps {
+  stats: DashboardStats;
+  chartData: ChartData[];
+  popularProducts: PopularProduct[];
+}
+
+export default function DashboardLayout({
+  stats,
+  chartData,
+  popularProducts,
+}: DashboardLayoutProps) {
   return (
-    <Wrapper>
-      <Typography variant="h5" fontWeight="bold" mb={4}>
-        대시보드
-      </Typography>
+    <DashboardContainer>
+      {/* 헤더 */}
+      <Header title="대시보드" />
 
-      {/* 통계 카드 3개 가로 배치 */}
-      <Box sx={{ display: "flex", gap: 3, mb: 4 }}>
-        <StatCard label="오늘 가입자 수" value={stats.todayUsers} />
-        <StatCard label="총 유저 수" value={stats.totalUsers} />
+      <StatCardGrid>
+        <StatCard label="오늘 방문자 수" value={stats.todayVisitors} />
+
+        <StatCard
+          label="총 유저 수 / 오늘 가입자 수"
+          value={stats.totalUsers}
+          secondaryValue={stats.todaySignups}
+        />
+
         <StatCard label="오늘 재생 수" value={stats.todayPlays} />
-      </Box>
+      </StatCardGrid>
 
-      {/* 차트, 인기제품 가로 배치 */}
-      <Box sx={{ display: "flex", gap: 3 }}>
-        <ChartBox>
-          <Typography variant="body2" color="text.secondary" mb={2}>
-            최근 7일 재생 수
-          </Typography>
+      <ChartGrid>
+        <ChartBox title="최근 7일 재생 수">
           <PlayChart data={chartData} />
         </ChartBox>
 
-        <ChartBox>
-          <Typography variant="body2" color="text.secondary" mb={2}>
-            인기 제품
-          </Typography>
+        <ChartBox title="인기 모델">
           <PopularProducts products={popularProducts} />
         </ChartBox>
-      </Box>
-    </Wrapper>
+      </ChartGrid>
+    </DashboardContainer>
   );
 }
 
-const Wrapper = styled(Box)(() => ({
-  padding: "32px",
+const DashboardContainer = styled(Box)(({ theme }) => ({
+  width: "100%",
+  minWidth: 0,
+  color: theme.palette.text.primary,
+}));
+
+const StatCardGrid = styled(Box)(() => ({
+  display: "grid",
+  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+  gap: "20px",
+  margin: 0,
+  marginBottom: "50px",
+}));
+
+const ChartGrid = styled(Box)(() => ({
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  alignItems: "stretch",
+  gap: "20px",
 }));

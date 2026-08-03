@@ -17,7 +17,12 @@ export default function PlayChart({ data }: Props) {
         <XAxis dataKey="date" tick={{ fontSize: 12 }} />
         <YAxis tick={{ fontSize: 12 }} />
         <Tooltip />
-        <Bar dataKey="count" name="재생 수" fill={theme.palette.primary.main} radius={[4, 4, 0, 0]} />
+        <Bar
+          dataKey="count"
+          name="재생 수"
+          fill={theme.palette.primary.main}
+          radius={[4, 4, 0, 0]}
+        />
       </BarChart>
     </ResponsiveContainer>
   );

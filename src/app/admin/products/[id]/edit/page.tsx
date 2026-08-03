@@ -1,6 +1,7 @@
 import EditForm from "@/app/admin/products/_components/EditForm";
+import Header from "../../../_components/Header";
 import { getProductById, getBrands } from "@/lib/api/products";
-import { Box, Typography } from "@mui/material";
+import { Box } from "@mui/material";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -14,10 +15,10 @@ export default async function EditPage({ params }: Props) {
   const [product, brands] = await Promise.all([getProductById(productId), getBrands()]);
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Typography variant="h5" fontWeight="bold" mb={3}>
-        상품 수정
-      </Typography>
+    <Box>
+      {/* 헤더 */}
+      <Header title="상품 수정" />
+
       <EditForm product={product} brands={brands ?? []} />
     </Box>
   );

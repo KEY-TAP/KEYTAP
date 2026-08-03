@@ -1,7 +1,7 @@
 import { getSwitchById } from "@/lib/api/switches";
 import SwitchForm from "../../_components/SwitchForm";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
+import Header from "@/app/admin/_components/Header";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -27,10 +27,10 @@ export default async function SwitchEditPage({ params }: Props) {
   };
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Typography variant="h5" fontWeight="bold" mb={3}>
-        스위치 수정
-      </Typography>
+    <Box>
+      {/* 헤더 */}
+      <Header title="스위치 수정" />
+
       <SwitchForm switchData={formattedData} />
     </Box>
   );
