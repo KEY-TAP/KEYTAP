@@ -11,7 +11,9 @@ import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import Button from "@mui/material/Button";
-import { createProductClient, uploadProductImageClient } from "@/lib/api/productsClients";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import { createProductClient, uploadProductImageClient, linkSwitchToProductClient } from "@/lib/api/productsClients";
 import ImageUpload from "@/app/admin/products/_components/ImageUpload";
 
 interface Brand {
@@ -19,26 +21,38 @@ interface Brand {
   brand_name: string;
 }
 
-interface Props {
-  brands: Brand[];
+interface Switch {
+  switch_id: number;
+  switch_name: string;
+  switch_type: string;
 }
 
-export default function RegisterForm({ brands }: Props) {
+interface Props {
+  brands: Brand[];
+  switches: Switch[];
+}
+
+export default function RegisterForm({ brands, switches }: Props) {
   const router = useRouter();
 
   const [productName, setProductName] = useState("");
   const [brandId, setBrandId] = useState<number | "">("");
   const [productType, setProductType] = useState("");
   const [description, setDescription] = useState("");
+  const [selectedSwitchIds, setSelectedSwitchIds] = useState<number[]>([]);
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const handleSwitchToggle = (switchId: number) => {
+    setSelectedSwitchIds((prev) => (prev.includes(switchId) ? prev.filter((id) => id !== switchId) : [...prev, switchId]));
+  };
 
   const handleSubmit = async () => {
     if (!productName || !brandId) return;
 
     setLoading(true);
     try {
-      // 1단계: 상품 먼저 등록 (product_id가 있어야 이미지 업로드 가능)
+      // 1단계: 상품 먼저 등록
       const product = await createProductClient({
         product_name: productName,
         fk_brand_id: Number(brandId),
@@ -46,9 +60,14 @@ export default function RegisterForm({ brands }: Props) {
         description,
       });
 
-      // 2단계: 이미지 동시 업로드 (Promise.all = 병렬 처리)
+      // 2단계: 스위치 연결
+      if (selectedSwitchIds.length > 0) {
+        await Promise.allSettled(selectedSwitchIds.map((switchId, index) => linkSwitchToProductClient(product.product_id, switchId, undefined, index === 0)));
+      }
+
+      // 3단계: 이미지 업로드
       if (files.length > 0) {
-        await Promise.all(files.map((file) => uploadProductImageClient(file, product.product_id)));
+        await Promise.allSettled(files.map((file) => uploadProductImageClient(file, product.product_id)));
       }
 
       router.push("/admin/products");
@@ -86,6 +105,32 @@ export default function RegisterForm({ brands }: Props) {
               ))}
             </Select>
           </FormControl>
+        </FieldRow>
+
+        {/* 스위치 선택 */}
+        <FieldRow>
+          <Label>스위치</Label>
+          <Box sx={{ flex: 1 }}>
+            {switches.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                등록된 스위치가 없습니다
+              </Typography>
+            ) : (
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                {switches.map((sw) => (
+                  <FormControlLabel
+                    key={sw.switch_id}
+                    control={<Checkbox size="small" checked={selectedSwitchIds.includes(sw.switch_id)} onChange={() => handleSwitchToggle(sw.switch_id)} />}
+                    label={
+                      <Typography variant="body2">
+                        {sw.switch_name} ({sw.switch_type})
+                      </Typography>
+                    }
+                  />
+                ))}
+              </Box>
+            )}
+          </Box>
         </FieldRow>
 
         <FieldRow>

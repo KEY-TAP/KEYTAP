@@ -109,3 +109,13 @@ export async function getProductById(productId: number) {
   if (error) throw new Error(error.message);
   return data;
 }
+
+// 스위치 목록 조회 (상품 등록/수정 폼 셀렉트박스용)
+export async function getSwitchesForProduct() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.from("switches").select("switch_id, switch_name, switch_type").order("switch_name");
+
+  if (error) throw new Error(error.message);
+  return data;
+}
