@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { styled } from "@mui/material/styles";
+
+import { deleteProductClient } from "@/lib/api/productsClients";
+import SearchField from "../../_common/_components/SearchField";
+
+// mui
+import { alpha, styled } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
@@ -10,8 +15,6 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Button from "@mui/material/Button";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
-import { deleteProductClient } from "@/lib/api/productsClients";
-import { TextField } from "@mui/material";
 
 interface Product {
   product_id: number;
@@ -26,17 +29,22 @@ interface Props {
   products: Product[];
 }
 
+const TABLE_COLUMNS = "70px minmax(0, 1fr) 200px 200px 70px";
+
 export default function ProductTable({ products }: Props) {
   const router = useRouter();
 
   // 점 3개 메뉴 열림/닫힘 상태
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  // 검색어 상태
   const [keyword, setKeyword] = useState("");
 
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, id: number) => {
     console.log("메뉴 열림, id:", id);
-    setAnchorEl(e.currentTarget); // 클릭한 버튼 위치에 메뉴 띄우기
+
+    setAnchorEl(e.currentTarget);
     setSelectedId(id);
   };
 
@@ -47,113 +55,396 @@ export default function ProductTable({ products }: Props) {
 
   const handleDelete = async () => {
     console.log("handleDelete 호출됨", selectedId);
+
     if (!selectedId) return;
+
     await deleteProductClient(selectedId);
+
     handleMenuClose();
-    router.refresh(); // 삭제 후 목록 새로고침
+    router.refresh();
   };
 
   const handleEdit = () => {
     if (!selectedId) return;
+
     router.push(`/admin/products/${selectedId}/edit`);
     handleMenuClose();
   };
 
   const filterProducts = products.filter((products) => {
     if (!keyword) return true;
+
     return products.product_name.toLowerCase().includes(keyword.toLowerCase());
   });
 
   return (
-    <Box>
-      {/* 상단: 전체 수 + 등록 버튼 */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-        <Typography variant="body1" color="text.secondary">
-          전체 <strong>{products.length}</strong>
-        </Typography>
-        <Button variant="contained" onClick={() => router.push("/admin/products/register")}>
+    <ProductPage>
+      <ProductContent>
+        {/* 전체 상품 수 */}
+        <TotalCount>
+          전체
+          <TotalCountValue>{products.length}</TotalCountValue>
+        </TotalCount>
+
+        {/* 검색창 */}
+        <SearchArea>
+          <SearchField placeholder="상품명 검색" value={keyword} onChange={setKeyword} />
+        </SearchArea>
+
+        {/* 상품 목록 */}
+        <ProductTableArea>
+          <TableHeader>
+            <TableHeaderText>No.</TableHeaderText>
+
+            <TableHeaderText>상품명</TableHeaderText>
+
+            <TableHeaderText>브랜드</TableHeaderText>
+
+            <TableHeaderText>등록일</TableHeaderText>
+
+            <TableMenuHeader />
+          </TableHeader>
+
+          {filterProducts.map((product, index) => (
+            <TableRow key={product.product_id}>
+              <RowNumber>{index + 1}</RowNumber>
+
+              <ProductCell>
+                {/* 이미지 필드 연결 전 퍼블리싱용 썸네일 */}
+                <ProductThumbnail aria-hidden="true" />
+
+                <ProductTextArea>
+                  <ProductName title={product.product_name}>{product.product_name}</ProductName>
+
+                  {product.description && (
+                    <ProductDescription title={product.description}>
+                      {product.description}
+                    </ProductDescription>
+                  )}
+                </ProductTextArea>
+              </ProductCell>
+
+              {/* 브랜드명 */}
+              <DataText title={product.brands?.[0]?.brand_name}>
+                {product.brands?.[0]?.brand_name ?? "-"}
+              </DataText>
+
+              {/* 등록일 */}
+              <DataText>{product.created_at.slice(0, 10)}</DataText>
+
+              <MenuButtonCell>
+                <ProductMenuButton
+                  aria-label={`${product.product_name} 관리 메뉴`}
+                  aria-haspopup="menu"
+                  aria-controls={
+                    selectedId === product.product_id && Boolean(anchorEl)
+                      ? "product-action-menu"
+                      : undefined
+                  }
+                  aria-expanded={
+                    selectedId === product.product_id && Boolean(anchorEl) ? true : undefined
+                  }
+                  onClick={(e) => handleMenuOpen(e, product.product_id)}
+                >
+                  <MoreMenuIcon />
+                </ProductMenuButton>
+              </MenuButtonCell>
+            </TableRow>
+          ))}
+        </ProductTableArea>
+      </ProductContent>
+
+      {/* 하단 액션 버튼 */}
+      <BottomActions>
+        <ExportButton type="button" variant="outlined">
+          전체 목록 내보내기
+        </ExportButton>
+
+        <RegisterButton
+          type="button"
+          variant="contained"
+          disableElevation
+          onClick={() => router.push("/admin/products/register")}
+        >
           상품 등록
-        </Button>
-      </Box>
-
-      {/* 검색창 */}
-      <TextField fullWidth placeholder="상품명 검색" value={keyword} onChange={(e) => setKeyword(e.target.value)} sx={{ mb: 2 }} />
-
-      {/* 테이블 헤더 */}
-      <TableHeader>
-        <Typography variant="body2" sx={{ width: 40 }}>
-          No.
-        </Typography>
-        <Typography variant="body2" sx={{ flex: 1 }}>
-          상품명
-        </Typography>
-        <Typography variant="body2" sx={{ width: 120 }}>
-          브랜드
-        </Typography>
-        <Typography variant="body2" sx={{ width: 120 }}>
-          등록일
-        </Typography>
-        <Box sx={{ width: 40 }} />
-      </TableHeader>
-
-      {/* 상품 목록 */}
-      {filterProducts.map((product, index) => (
-        <TableRow key={product.product_id}>
-          <Typography variant="body2" color="text.secondary" sx={{ width: 40 }}>
-            {index + 1}
-          </Typography>
-
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="body2" fontWeight="bold">
-              {product.product_name}
-            </Typography>
-            {product.description && (
-              <Typography variant="caption" color="text.secondary">
-                {product.description}
-              </Typography>
-            )}
-          </Box>
-
-          <Typography variant="body2" sx={{ width: 120 }}>
-            {product.brands?.[0]?.brand_name ?? "-"}
-          </Typography>
-
-          {/* created_at은 "2026-04-11T..." 형태라 앞 10자리만 자름 */}
-          <Typography variant="body2" color="text.secondary" sx={{ width: 120 }}>
-            {product.created_at.slice(0, 10)}
-          </Typography>
-
-          <IconButton size="small" sx={{ width: 40 }} onClick={(e) => handleMenuOpen(e, product.product_id)}>
-            <MoreHorizIcon fontSize="small" />
-          </IconButton>
-        </TableRow>
-      ))}
+        </RegisterButton>
+      </BottomActions>
 
       {/* 수정/삭제 드롭다운 */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        <MenuItem onClick={handleEdit}>수정</MenuItem>
-        <MenuItem onClick={handleDelete} sx={{ color: "error.main" }}>
-          삭제
-        </MenuItem>
-      </Menu>
-    </Box>
+      <ActionMenu
+        id="product-action-menu"
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "right",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+      >
+        <ActionMenuItem onClick={handleEdit}>수정</ActionMenuItem>
+
+        <ActionMenuItem onClick={handleDelete}>삭제</ActionMenuItem>
+      </ActionMenu>
+    </ProductPage>
   );
 }
 
-const TableHeader = styled(Box)(({ theme }) => ({
+const ProductPage = styled(Box)(({ theme }) => ({
   display: "flex",
-  alignItems: "center",
-  padding: "12px 16px",
-  borderBottom: `1px solid ${theme.palette.divider}`,
-  color: theme.palette.text.secondary,
+  flexDirection: "column",
+  width: "100%",
+
+  minHeight: "calc(100vh - 3rem)",
+
+  boxSizing: "border-box",
+  backgroundColor: theme.palette.background.default,
 }));
 
-const TableRow = styled(Box)(({ theme }) => ({
+const ProductContent = styled(Box)({
+  width: "100%",
+});
+
+const TotalCount = styled(Typography)(({ theme }) => ({
   display: "flex",
   alignItems: "center",
-  padding: "16px",
+  gap: "5px",
+  color: theme.palette.text.primary,
+  fontSize: "1.25rem",
+  fontWeight: 400,
+}));
+
+const TotalCountValue = styled("span")(({ theme }) => ({
+  color: theme.palette.primary.main,
+  fontWeight: 500,
+}));
+
+const SearchArea = styled(Box)({
+  width: "100%",
+  marginTop: "30px",
+});
+
+const ProductTableArea = styled(Box)({
+  width: "100%",
+});
+
+const TableHeader = styled(Box)(({ theme }) => ({
+  display: "grid",
+  gridTemplateColumns: TABLE_COLUMNS,
+  alignItems: "center",
+  width: "100%",
+  boxSizing: "border-box",
   borderBottom: `1px solid ${theme.palette.divider}`,
+}));
+
+const TableHeaderText = styled(Typography)(({ theme }) => ({
+  overflow: "hidden",
+  color: theme.palette.text.secondary,
+  fontSize: "16px",
+  fontWeight: 300,
+  lineHeight: 1,
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  padding: "20px 16px",
+}));
+
+const TableMenuHeader = styled(Box)({
+  width: "1.5rem",
+});
+
+const TableRow = styled(Box)(({ theme }) => ({
+  display: "grid",
+  gridTemplateColumns: TABLE_COLUMNS,
+  alignItems: "center",
+  width: "100%",
+  padding: "20px",
+  boxSizing: "border-box",
+  borderBottom: `1px solid ${theme.palette.divider}`,
+  transition: "background-color 0.12s ease",
+
   "&:hover": {
-    backgroundColor: theme.palette.grey[100],
+    backgroundColor: alpha(theme.palette.grey[100], 0.45),
+  },
+}));
+
+const RowNumber = styled(Typography)(({ theme }) => ({
+  paddingLeft: "20px",
+  boxSizing: "border-box",
+  color: theme.palette.grey[800],
+  fontSize: "1rem",
+  fontWeight: 400,
+  lineHeight: 1,
+}));
+
+const ProductCell = styled(Box)({
+  display: "flex",
+  alignItems: "center",
+  minWidth: 0,
+  paddingRight: "16px",
+  gap: "10px",
+});
+
+const ProductThumbnail = styled(Box)(({ theme }) => ({
+  flexShrink: 0,
+  width: "80px",
+  height: "80px",
+  overflow: "hidden",
+  backgroundColor: theme.palette.grey[200],
+}));
+
+const ProductTextArea = styled(Box)({
+  flex: 1,
+});
+
+const ProductName = styled(Typography)(({ theme }) => ({
+  display: "-webkit-box",
+  overflow: "hidden",
+  color: theme.palette.grey[800],
+  fontSize: "1.25rem",
+  fontWeight: 400,
+  textOverflow: "ellipsis",
+  WebkitBoxOrient: "vertical",
+  WebkitLineClamp: 2,
+}));
+
+const ProductDescription = styled(Typography)(({ theme }) => ({
+  marginTop: "10px",
+  overflow: "hidden",
+  color: theme.palette.grey[600],
+  fontSize: "1rem",
+  fontWeight: 400,
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+}));
+
+const DataText = styled(Typography)(({ theme }) => ({
+  overflow: "hidden",
+  paddingRight: "0.5rem",
+  color: theme.palette.text.primary,
+  fontSize: "1rem",
+  fontWeight: 400,
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+}));
+
+const MenuButtonCell = styled(Box)({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "1.5rem",
+});
+
+const ProductMenuButton = styled(IconButton)(({ theme }) => ({
+  width: "28px",
+  height: "28px",
+  padding: 0,
+  borderRadius: "5px",
+  color: theme.palette.text.primary,
+  backgroundColor: theme.palette.secondary.main,
+
+  "&:hover": {
+    backgroundColor: alpha(theme.palette.primary.main, 0.12),
+  },
+
+  "&:focus-visible": {
+    boxShadow: `0 0 0 1px ${theme.palette.primary.main}`,
+  },
+}));
+
+const MoreMenuIcon = styled(MoreHorizIcon)({
+  fontSize: "1rem",
+});
+
+const ActionMenu = styled(Menu)(({ theme }) => ({
+  "& .MuiPaper-root": {
+    width: "110px",
+    marginTop: "4px",
+    overflow: "hidden",
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: "5px",
+    backgroundColor: theme.palette.background.default,
+    boxShadow: `0 10px 10px ${alpha(theme.palette.common.black, 0.16)}`,
+  },
+
+  "& .MuiMenu-list": {
+    padding: 0,
+  },
+}));
+
+const ActionMenuItem = styled(MenuItem)(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "100%",
+  padding: "16px 36px",
+  boxSizing: "border-box",
+  color: theme.palette.grey[800],
+  fontSize: "1.25rem",
+  fontWeight: 400,
+  lineHeight: 1,
+
+  "&:not(:last-of-type)": {
+    borderBottom: `1px solid ${theme.palette.divider}`,
+  },
+
+  "&:hover": {
+    backgroundColor: alpha(theme.palette.text.primary, 0.1),
+  },
+}));
+
+const BottomActions = styled(Box)({
+  display: "flex",
+  justifyContent: "flex-end",
+  alignItems: "center",
+  gap: "22px",
+  marginTop: "auto",
+  // paddingTop: "20px",
+  boxSizing: "border-box",
+});
+
+export const ExportButton = styled(Button)(({ theme }) => ({
+  width: "auto",
+  height: "56px",
+  padding: "16px 20px",
+  boxSizing: "border-box",
+  borderColor: theme.palette.divider,
+  borderRadius: "5px",
+  color: theme.palette.grey[800],
+  backgroundColor: theme.palette.background.default,
+  fontSize: "1.25rem",
+  fontWeight: 400,
+  textTransform: "none",
+  transition: "all .3s ease",
+
+  "&:hover": {
+    background: theme.palette.primary.main,
+    color: theme.palette.background.default,
+    borderColor: theme.palette.primary.main,
+    transition: "all .3s ease",
+  },
+}));
+
+export const RegisterButton = styled(Button)(({ theme }) => ({
+  width: "200px",
+  height: "56px",
+
+  padding: "16px 20px",
+  boxSizing: "border-box",
+  borderRadius: "5px",
+  color: theme.palette.common.white,
+  backgroundColor: theme.palette.primary.main,
+  fontSize: "1.25rem",
+  fontWeight: 400,
+  textTransform: "none",
+  transition: "all .3s ease",
+
+  "&:hover": {
+    backgroundColor: theme.palette.background.default,
+    color: theme.palette.primary.main,
+    border: `1px solid ${theme.palette.primary.main}`,
+    transition: "all .3s ease",
   },
 }));
