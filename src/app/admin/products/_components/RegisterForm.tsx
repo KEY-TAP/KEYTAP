@@ -3,9 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { createProductClient, uploadProductImageClient } from "@/lib/api/productsClients";
-import ImageUpload from "@/app/admin/products/_components/ImageUpload";
-
 // mui
 import { styled } from "@mui/material/styles";
 import Box from "@mui/material/Box";
@@ -17,16 +14,28 @@ import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import Button from "@mui/material/Button";
 
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import { createProductClient, uploadProductImageClient, linkSwitchToProductClient } from "@/lib/api/productsClients";
+import ImageUpload from "@/app/admin/products/_components/ImageUpload";
+
 interface Brand {
   brand_id: number;
   brand_name: string;
 }
 
-interface Props {
-  brands: Brand[];
+interface Switch {
+  switch_id: number;
+  switch_name: string;
+  switch_type: string;
 }
 
-export default function RegisterForm({ brands }: Props) {
+interface Props {
+  brands: Brand[];
+  switches: Switch[];
+}
+
+export default function RegisterForm({ brands, switches }: Props) {
   const router = useRouter();
 
   const [productName, setProductName] = useState("");
@@ -34,9 +43,14 @@ export default function RegisterForm({ brands }: Props) {
   const [brandId, setBrandId] = useState<number | "">("");
   const [productType, setProductType] = useState("");
   const [description, setDescription] = useState("");
+  const [selectedSwitchIds, setSelectedSwitchIds] = useState<number[]>([]);
   const [hashTags, setHashTags] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const handleSwitchToggle = (switchId: number) => {
+    setSelectedSwitchIds((prev) => (prev.includes(switchId) ? prev.filter((id) => id !== switchId) : [...prev, switchId]));
+  };
 
   const handleSubmit = async () => {
     if (!productName || !brandId) return;
@@ -44,8 +58,7 @@ export default function RegisterForm({ brands }: Props) {
     setLoading(true);
 
     try {
-      // 1단계: 상품 먼저 등록
-      // product_id가 있어야 이미지 업로드 가능
+      // 1단계: 상품 등록
       const product = await createProductClient({
         product_name: productName.trim(),
         fk_brand_id: Number(brandId),
@@ -54,10 +67,13 @@ export default function RegisterForm({ brands }: Props) {
         hashtags: hashTags.trim(),
       });
 
-      // 2단계: 이미지 동시 업로드
-      // Promise.all = 병렬 처리
+      // 2단계: 스위치 연결
+      if (selectedSwitchIds.length > 0) {
+        await Promise.allSettled(selectedSwitchIds.map((switchId, index) => linkSwitchToProductClient(product.product_id, switchId, undefined, index === 0)));
+      }
+      // 3단계: 이미지 업로드
       if (files.length > 0) {
-        await Promise.all(files.map((file) => uploadProductImageClient(file, product.product_id)));
+        await Promise.allSettled(files.map((file) => uploadProductImageClient(file, product.product_id)));
       }
 
       router.push("/admin/products");
@@ -70,11 +86,7 @@ export default function RegisterForm({ brands }: Props) {
     <FormWrap>
       <FieldCol>
         <LabelCol>기존 상품 불러오기</LabelCol>
-        <FormTextField
-          placeholder="상품명으로 검색해주세요."
-          value={exProductName}
-          onChange={(e) => setExProductName(e.target.value)}
-        />
+        <FormTextField placeholder="상품명으로 검색해주세요." value={exProductName} onChange={(e) => setExProductName(e.target.value)} />
       </FieldCol>
 
       <Section>
@@ -89,11 +101,7 @@ export default function RegisterForm({ brands }: Props) {
         <FieldRow>
           <Label>상품명</Label>
 
-          <FormTextField
-            placeholder="상품명을 입력해주세요"
-            value={productName}
-            onChange={(e) => setProductName(e.target.value)}
-          />
+          <FormTextField placeholder="상품명을 입력해주세요" value={productName} onChange={(e) => setProductName(e.target.value)} />
         </FieldRow>
 
         <FieldRow>
@@ -102,11 +110,7 @@ export default function RegisterForm({ brands }: Props) {
           <BrandFormControl size="small">
             <InputLabel>브랜드 불러오기</InputLabel>
 
-            <Select
-              value={brandId}
-              label="브랜드 불러오기"
-              onChange={(e) => setBrandId(e.target.value as number)}
-            >
+            <Select value={brandId} label="브랜드 불러오기" onChange={(e) => setBrandId(e.target.value as number)}>
               {brands.map((brand) => (
                 <MenuItem key={brand.brand_id} value={brand.brand_id}>
                   {brand.brand_name}
@@ -116,30 +120,42 @@ export default function RegisterForm({ brands }: Props) {
           </BrandFormControl>
         </FieldRow>
 
+        {/* 스위치 선택 */}
+        <FieldRow>
+          <Label>스위치</Label>
+          <Box sx={{ flex: 1 }}>
+            {switches.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                등록된 스위치가 없습니다
+              </Typography>
+            ) : (
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                {switches.map((sw) => (
+                  <FormControlLabel
+                    key={sw.switch_id}
+                    control={<Checkbox size="small" checked={selectedSwitchIds.includes(sw.switch_id)} onChange={() => handleSwitchToggle(sw.switch_id)} />}
+                    label={
+                      <Typography variant="body2">
+                        {sw.switch_name} ({sw.switch_type})
+                      </Typography>
+                    }
+                  />
+                ))}
+              </Box>
+            )}
+          </Box>
+        </FieldRow>
+
         <FieldRow>
           <Label>주요 특징</Label>
 
-          <FormTextField
-            multiline
-            rows={4}
-            placeholder="로우&하이 프로파일 교체, 탠커리스, ..."
-            size="small"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
+          <FormTextField multiline rows={4} placeholder="로우&하이 프로파일 교체, 탠커리스, ..." size="small" value={description} onChange={(e) => setDescription(e.target.value)} />
         </FieldRow>
 
         <FieldRow>
           <Label>해시태그</Label>
 
-          <FormTextField
-            multiline
-            rows={4}
-            placeholder="콤마(,)로 구분해주세요."
-            size="small"
-            value={hashTags}
-            onChange={(e) => setHashTags(e.target.value)}
-          />
+          <FormTextField multiline rows={4} placeholder="콤마(,)로 구분해주세요." size="small" value={hashTags} onChange={(e) => setHashTags(e.target.value)} />
         </FieldRow>
       </Section>
 
@@ -150,11 +166,7 @@ export default function RegisterForm({ brands }: Props) {
       </Section>
 
       <BottomActions>
-        <SecondaryActionButton
-          type="button"
-          variant="outlined"
-          onClick={() => router.push("/admin/products")}
-        >
+        <SecondaryActionButton type="button" variant="outlined" onClick={() => router.push("/admin/products")}>
           취소
         </SecondaryActionButton>
 
@@ -162,13 +174,7 @@ export default function RegisterForm({ brands }: Props) {
           임시저장
         </SecondaryActionButton>
 
-        <PrimaryActionButton
-          type="button"
-          variant="contained"
-          disableElevation
-          onClick={handleSubmit}
-          disabled={loading}
-        >
+        <PrimaryActionButton type="button" variant="contained" disableElevation onClick={handleSubmit} disabled={loading}>
           {loading ? "등록 중..." : "상품 등록"}
         </PrimaryActionButton>
       </BottomActions>

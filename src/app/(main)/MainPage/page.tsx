@@ -1,6 +1,7 @@
 // 메인페이지
 
 import { Metadata } from "next";
+import { getMainProducts } from "@/lib/api/mainProducts";
 import MainComponent from "./_component/MainComponents";
 
 export const metadata: Metadata = {
@@ -9,10 +10,12 @@ export const metadata: Metadata = {
   robots: "noindex, nofollow",
 };
 
-export default function MainPage() {
+export default async function MainPage() {
+  // 서버에서 제품 목록 fetch
+  const products = await getMainProducts();
   return (
     <div>
-      <MainComponent />
+      <MainComponent products={products} />
     </div>
   );
 }

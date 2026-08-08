@@ -54,6 +54,25 @@ export async function uploadProductImageClient(file: File, productId: number) {
   return publicUrl;
 }
 
+// 상품-스위치 연결
+export async function linkSwitchToProductClient(productId: number, switchId: number, optionName?: string, isDefault?: boolean) {
+  const { error } = await supabase.from("product_switches").insert({
+    fk_product_id: productId,
+    fk_switch_id: switchId,
+    option_name: optionName ?? null,
+    is_default: isDefault ?? false,
+  });
+
+  if (error) throw new Error(error.message);
+}
+
+// 상품-스위치 연결 전체 삭제 (수정 시 기존 연결 초기화용)
+export async function unlinkSwitchFromProductClient(productId: number) {
+  const { error } = await supabase.from("product_switches").delete().eq("fk_product_id", productId);
+
+  if (error) throw new Error(error.message);
+}
+
 // 상품 수정
 export async function updateProductClient(productId: number, payload: ProductPayload) {
   const { error } = await supabase.from("products").update(payload).eq("product_id", productId);
