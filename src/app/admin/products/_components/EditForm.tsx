@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { updateProductClient, uploadProductImageClient } from "@/lib/api/productsClients";
+import { updateProductClient, uploadProductImageClient, linkSwitchToProductClient, unlinkSwitchFromProductClient } from "@/lib/api/productsClients";
 import ImageUpload from "./ImageUpload";
 
 // mui
@@ -16,10 +16,18 @@ import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import Button from "@mui/material/Button";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
 
 interface Brand {
   brand_id: number;
   brand_name: string;
+}
+
+interface Switch {
+  switch_id: number;
+  switch_name: string;
+  switch_type: string;
 }
 
 interface ExistingImage {
@@ -33,17 +41,19 @@ interface Product {
   product_name: string;
   product_type: string | null;
   description: string | null;
-  hashtags: string;
+  hashtags: string | null;
   fk_brand_id: number;
   product_images: ExistingImage[] | null;
+  switch_ids: number[]; // 현재 연결된 스위치 ID 목록
 }
 
 interface Props {
   product: Product;
   brands: Brand[];
+  switches: Switch[];
 }
 
-export default function EditForm({ product, brands }: Props) {
+export default function EditForm({ product, brands, switches }: Props) {
   const router = useRouter();
 
   // 기존 상품 데이터로 초기값 설정
@@ -53,17 +63,27 @@ export default function EditForm({ product, brands }: Props) {
   const [description, setDescription] = useState(product.description ?? "");
   const [hashtags, setHashtags] = useState(product.hashtags ?? "");
 
-  // 수정 페이지에서 새로 추가할 이미지
+  // 기존에 연결된 스위치 ID로 초기값 설정
+  const [selectedSwitchIds, setSelectedSwitchIds] = useState<number[]>(product.switch_ids ?? []);
+
+  // 새로 추가할 이미지
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // 스위치 체크박스 토글
+  const handleSwitchToggle = (switchId: number) => {
+    setSelectedSwitchIds(
+      (prev) =>
+        prev.includes(switchId)
+          ? prev.filter((id) => id !== switchId) // 이미 선택됐으면 제거
+          : [...prev, switchId], // 없으면 추가
+    );
+  };
+
   const handleSubmit = async () => {
-    if (!productName.trim() || !brandId) {
-      return;
-    }
+    if (!productName.trim() || !brandId) return;
 
     setLoading(true);
-
     try {
       // 1단계: 상품 정보 수정
       await updateProductClient(product.product_id, {
@@ -74,7 +94,22 @@ export default function EditForm({ product, brands }: Props) {
         hashtags: hashtags.trim(),
       });
 
-      // 2단계: 새로 추가된 이미지 동시 업로드
+      // 2단계: 기존 스위치 연결 전부 삭제 후 새로 연결
+      await unlinkSwitchFromProductClient(product.product_id);
+      if (selectedSwitchIds.length > 0) {
+        await Promise.allSettled(
+          selectedSwitchIds.map((switchId, index) =>
+            linkSwitchToProductClient(
+              product.product_id,
+              switchId,
+              undefined,
+              index === 0, // 첫번째 스위치를 기본값으로
+            ),
+          ),
+        );
+      }
+
+      // 3단계: 새로 추가된 이미지 업로드
       if (files.length > 0) {
         await Promise.all(files.map((file) => uploadProductImageClient(file, product.product_id)));
       }
@@ -93,33 +128,19 @@ export default function EditForm({ product, brands }: Props) {
 
         <FieldRow>
           <Label>상품코드</Label>
-
           <FormTextField disabled value={product.product_id} />
         </FieldRow>
 
         <FieldRow>
           <Label>상품명</Label>
-
-          <FormTextField
-            placeholder="상품명을 입력해주세요"
-            value={productName}
-            onChange={(event) => setProductName(event.target.value)}
-          />
+          <FormTextField placeholder="상품명을 입력해주세요" value={productName} onChange={(event) => setProductName(event.target.value)} />
         </FieldRow>
 
         <FieldRow>
           <Label>브랜드</Label>
-
           <BrandFormControl size="small">
             <InputLabel>브랜드 불러오기</InputLabel>
-
-            <Select
-              value={brandId}
-              label="브랜드 불러오기"
-              onChange={(event) => {
-                setBrandId(Number(event.target.value));
-              }}
-            >
+            <Select value={brandId} label="브랜드 불러오기" onChange={(event) => setBrandId(Number(event.target.value))}>
               {brands.map((brand) => (
                 <MenuItem key={brand.brand_id} value={brand.brand_id}>
                   {brand.brand_name}
@@ -129,55 +150,55 @@ export default function EditForm({ product, brands }: Props) {
           </BrandFormControl>
         </FieldRow>
 
+        {/* 스위치 선택 */}
+        <FieldRow>
+          <Label>스위치</Label>
+          <Box sx={{ flex: 1 }}>
+            {switches.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                등록된 스위치가 없습니다
+              </Typography>
+            ) : (
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                {switches.map((sw) => (
+                  <FormControlLabel
+                    key={sw.switch_id}
+                    control={<Checkbox size="small" checked={selectedSwitchIds.includes(sw.switch_id)} onChange={() => handleSwitchToggle(sw.switch_id)} />}
+                    label={
+                      <Typography variant="body2">
+                        {sw.switch_name} ({sw.switch_type})
+                      </Typography>
+                    }
+                  />
+                ))}
+              </Box>
+            )}
+          </Box>
+        </FieldRow>
+
         <FieldRow>
           <Label>상품 유형</Label>
-
-          <FormTextField
-            placeholder="상품 유형을 입력해주세요"
-            value={productType}
-            onChange={(event) => setProductType(event.target.value)}
-          />
+          <FormTextField placeholder="상품 유형을 입력해주세요" value={productType} onChange={(event) => setProductType(event.target.value)} />
         </FieldRow>
 
         <FieldRow>
           <Label>주요 특징</Label>
-
-          <FormTextField
-            multiline
-            rows={4}
-            size="small"
-            placeholder="로우&하이 프로파일 교체, 텐키리스, ..."
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-          />
+          <FormTextField multiline rows={4} size="small" placeholder="로우&하이 프로파일 교체, 텐키리스, ..." value={description} onChange={(event) => setDescription(event.target.value)} />
         </FieldRow>
 
         <FieldRow>
           <Label>해시태그</Label>
-
-          <FormTextField
-            multiline
-            rows={4}
-            size="small"
-            placeholder="콤마(,)로 구분해주세요."
-            value={hashtags}
-            onChange={(event) => setHashtags(event.target.value)}
-          />
+          <FormTextField multiline rows={4} size="small" placeholder="콤마(,)로 구분해주세요." value={hashtags} onChange={(event) => setHashtags(event.target.value)} />
         </FieldRow>
       </Section>
 
       <Section>
         <ProductImageTitle variant="h6">상품 이미지</ProductImageTitle>
-
         <ImageUpload files={files} onChange={setFiles} />
       </Section>
 
       <BottomActions>
-        <SecondaryActionButton
-          type="button"
-          variant="outlined"
-          onClick={() => router.push("/admin/products")}
-        >
+        <SecondaryActionButton type="button" variant="outlined" onClick={() => router.push("/admin/products")}>
           취소
         </SecondaryActionButton>
 
@@ -185,13 +206,7 @@ export default function EditForm({ product, brands }: Props) {
           임시저장
         </SecondaryActionButton>
 
-        <PrimaryActionButton
-          type="button"
-          variant="contained"
-          disableElevation
-          onClick={handleSubmit}
-          disabled={loading}
-        >
+        <PrimaryActionButton type="button" variant="contained" disableElevation onClick={handleSubmit} disabled={loading}>
           {loading ? "수정 중..." : "수정 완료"}
         </PrimaryActionButton>
       </BottomActions>
@@ -199,6 +214,7 @@ export default function EditForm({ product, brands }: Props) {
   );
 }
 
+// 스타일드 컴포넌트 (UI 수정 없이 그대로 유지)
 const FormWrap = styled(Box)({});
 
 const Section = styled(Box)({
@@ -237,7 +253,6 @@ const Label = styled(Typography)(({ theme }) => ({
 
 const FormTextField = styled(TextField)({
   width: "100%",
-
   "& .MuiOutlinedInput-root": {
     borderRadius: "5px",
   },
@@ -245,7 +260,6 @@ const FormTextField = styled(TextField)({
 
 const BrandFormControl = styled(FormControl)({
   width: "100%",
-
   "& .MuiOutlinedInput-root": {
     borderRadius: "5px",
   },
