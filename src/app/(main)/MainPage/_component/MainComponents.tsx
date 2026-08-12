@@ -55,7 +55,7 @@ export default function MainComponent({ products }: Props) {
   // 첫 진입 시 랜덤으로 제품 선택
   useEffect(() => {
     if (products.length === 0) return;
-    if (selectedProduct) return; // 이미 선택된 제품 있으면 스킵
+    if (selectedProduct) return;
 
     const randomIndex = Math.floor(Math.random() * products.length);
     setSelectedProduct(products[randomIndex]);
@@ -73,36 +73,43 @@ export default function MainComponent({ products }: Props) {
   };
 
   // long 사운드 재생/정지 (플레이 버튼)
+  // isPlayingRef로 체크해야 클로저 문제 없이 정확한 상태 확인 가능
   const toggleLongSound = () => {
     if (!selectedProduct) return;
     const longSound = selectedProduct.sounds.find((s) => s.sound_type === "long");
     if (!longSound) return;
 
-    if (isPlaying) {
+    if (isPlayingRef.current) {
       // 정지
       longAudioRef.current?.pause();
       longAudioRef.current = null;
+      isPlayingRef.current = false;
       setIsPlaying(false);
     } else {
       // 재생
       const audio = new Audio(longSound.sound_url);
       audio.play().catch(() => {});
       // 재생 끝나면 자동으로 정지 상태로 변경
-      audio.onended = () => setIsPlaying(false);
+      audio.onended = () => {
+        isPlayingRef.current = false;
+        setIsPlaying(false);
+      };
       longAudioRef.current = audio;
+      isPlayingRef.current = true;
       setIsPlaying(true);
     }
   };
 
   // 제품 변경 시 long 사운드 정지
   useEffect(() => {
-    if (longAudioRef.current) {
-      longAudioRef.current.pause();
-      longAudioRef.current.onended = null;
-      longAudioRef.current = null;
-      isPlayingRef.current = false;
-    }
-    isPlayingRef.current = false;
+    return () => {
+      if (longAudioRef.current) {
+        longAudioRef.current.pause();
+        longAudioRef.current.onended = null;
+        longAudioRef.current = null;
+        isPlayingRef.current = false;
+      }
+    };
   }, [selectedProduct]);
 
   const addPressedKey = (key: string) => {
@@ -124,7 +131,7 @@ export default function MainComponent({ products }: Props) {
 
   const handlePressKeyDown = (e: KeyboardEvent) => {
     addPressedKey(e.code);
-    playSound(); // 키 누를 때 single 사운드 재생
+    playSound();
 
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.repeat) return;
@@ -168,7 +175,7 @@ export default function MainComponent({ products }: Props) {
     setIsInputFocused(true);
     if (!key.code) return;
     addPressedKey(key.code);
-    playSound(); // 가상 키보드도 single 사운드 재생
+    playSound();
 
     if (key.code === "Backspace") {
       setTypedText((prev) => prev.slice(0, -1));
@@ -197,6 +204,7 @@ export default function MainComponent({ products }: Props) {
   const handleMobileTouchInput = () => {
     mobileInputRef.current?.focus();
   };
+
   const handleMobileInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setTypedText(e.target.value);
   };
@@ -249,7 +257,6 @@ export default function MainComponent({ products }: Props) {
         <AudioSection>
           <AudioButton type="button" onClick={toggleLongSound}>
             {isPlaying ? <Image src={PAUSE_ICON} alt="pause icon" width={28} height={28} /> : <Image src={PLAY_ICON} alt="play icon" width={28} height={28} />}
-            {/* 선택된 제품명 표시 */}
             <AudioTitle>{selectedProduct?.product_name ?? "모델을 선택해주세요"}</AudioTitle>
           </AudioButton>
           <AudioDescription>미리 녹음된 타건음을 들으실 수 있습니다.</AudioDescription>
@@ -262,7 +269,6 @@ export default function MainComponent({ products }: Props) {
   );
 }
 
-// 기존 스타일드 컴포넌트 그대로 유지
 const Main = styled("main")(() => ({ width: "100%" }));
 
 const Section = styled(Box)(({ theme }) => ({
