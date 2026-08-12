@@ -17,6 +17,11 @@ export interface ProductImage {
   is_primary: boolean;
 }
 
+// 상품-스위치 연결 타입
+export interface ProductSwitch {
+  fk_switch_id: number;
+}
+
 export interface EditableProduct {
   product_id: number;
   product_name: string;
@@ -24,8 +29,11 @@ export interface EditableProduct {
   description: string | null;
   hashtags: string | null;
   fk_brand_id: number;
-  brands: {
-    brand_name: string;
-  } | null;
+  brands:
+    | {
+        brand_name: string;
+      }[]
+    | null; // Supabase JOIN 결과는 배열로 반환됨
   product_images: ProductImage[] | null;
+  product_switches: ProductSwitch[] | null; // ← 추가
 }
