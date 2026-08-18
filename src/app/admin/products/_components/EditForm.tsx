@@ -68,6 +68,7 @@ export default function EditForm({ product, brands, switches }: Props) {
 
   // 새로 추가할 이미지
   const [files, setFiles] = useState<File[]>([]);
+  const [primaryIndex, setPrimaryIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
   // 스위치 체크박스 토글
@@ -111,7 +112,7 @@ export default function EditForm({ product, brands, switches }: Props) {
 
       // 3단계: 새로 추가된 이미지 업로드
       if (files.length > 0) {
-        await Promise.all(files.map((file) => uploadProductImageClient(file, product.product_id)));
+        await Promise.all(files.map((file, index) => uploadProductImageClient(file, product.product_id, index === primaryIndex)));
       }
 
       router.push("/admin/products");
@@ -194,7 +195,7 @@ export default function EditForm({ product, brands, switches }: Props) {
 
       <Section>
         <ProductImageTitle variant="h6">상품 이미지</ProductImageTitle>
-        <ImageUpload files={files} onChange={setFiles} />
+        <ImageUpload files={files} onChange={setFiles} primaryIndex={primaryIndex} onPrimaryChange={setPrimaryIndex} />
       </Section>
 
       <BottomActions>
