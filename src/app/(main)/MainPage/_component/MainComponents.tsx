@@ -5,6 +5,7 @@ import Image from "next/image";
 import { HEARING_ICON, PAUSE_ICON, PLAY_ICON } from "@/common/icons/icons";
 import { useProductStore } from "@/store/useProductStore";
 import BottomSheet from "@/common/components/BottomSheet";
+import ProductCarousel, { ProductCarouselItem } from "@/common/components/ProductCarousel";
 
 // mui
 import { styled } from "@mui/material/styles";
@@ -51,6 +52,13 @@ export default function MainComponent({ products }: Props) {
 
   // long 사운드 오디오 객체 (재생/정지 제어용)
   const longAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // 캐러셀에 넘길 아이템 (상품명 + 대표이미지)
+  const carouselItems: ProductCarouselItem[] = products.map((p) => ({
+    id: p.product_id,
+    imageSrc: p.image_url ?? "/image/default-image.png",
+    title: p.product_name,
+  }));
 
   // 첫 진입 시 랜덤으로 제품 선택
   useEffect(() => {
@@ -262,6 +270,9 @@ export default function MainComponent({ products }: Props) {
           <AudioDescription>미리 녹음된 타건음을 들으실 수 있습니다.</AudioDescription>
         </AudioSection>
       </Section>
+
+      {/* 추천 상품 캐러셀 */}
+      <ProductCarousel title="추천 상품" items={carouselItems} />
 
       {/* 바텀시트 */}
       <BottomSheet products={products} />
