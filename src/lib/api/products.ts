@@ -17,6 +17,10 @@ export async function getProducts() {
       created_at,
       brands (
         brand_name
+      ),
+      product_images (
+        image_url,
+        is_primary
       )
     `,
     )
