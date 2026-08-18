@@ -9,6 +9,7 @@ export async function getMainProducts() {
       `
       product_id,
       product_name,
+      hashtags,
       product_images (
         image_url,
         is_primary
@@ -38,10 +39,18 @@ export async function getMainProducts() {
         return sw?.sounds ?? [];
       }) ?? [];
 
+    const tags = product.hashtags
+      ? product.hashtags
+          .split(",")
+          .map((tag: string) => tag.trim())
+          .filter(Boolean)
+      : [];
+
     return {
       product_id: product.product_id,
       product_name: product.product_name,
       image_url: primaryImage?.image_url ?? null,
+      tags,
       sounds,
     };
   });
