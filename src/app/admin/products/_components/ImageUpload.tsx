@@ -12,9 +12,11 @@ import Checkbox from "@mui/material/Checkbox";
 interface Props {
   files: File[];
   onChange: (files: File[]) => void;
+  primaryIndex: number | null;
+  onPrimaryChange: (index: number | null) => void;
 }
 
-export default function ImageUpload({ files, onChange }: Props) {
+export default function ImageUpload({ files, onChange, primaryIndex, onPrimaryChange }: Props) {
   // 숨긴 input을 버튼으로 트리거하기 위한 ref
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -30,23 +32,29 @@ export default function ImageUpload({ files, onChange }: Props) {
   const handleDelete = (index: number) => {
     // 해당 index만 제외하고 새 배열 반환
     onChange(files.filter((_, i) => i !== index));
+
+    // 삭제한 이미지가 대표 이미지였으면 지정 해제, 그 앞쪽 이미지였으면 인덱스 보정
+    if (primaryIndex === index) {
+      onPrimaryChange(null);
+    } else if (primaryIndex !== null && primaryIndex > index) {
+      onPrimaryChange(primaryIndex - 1);
+    }
+  };
+
+  // 체크된 걸 다시 누르면 해제, 다른 걸 누르면 그쪽으로 대표 이미지 이동 (단일 선택)
+  const handlePrimaryToggle = (index: number) => {
+    onPrimaryChange(primaryIndex === index ? null : index);
   };
 
   return (
     <ImageUploadWrap>
       <UploadGuide variant="caption">
         최대 5개까지 등록할 수 있습니다. <br />
-        체크 하면 대표이미지로 등록 됩니다. / 권장 사이즈 300 × 300 px, 최대 이미지 사이즈 100kb까지
-        가능합니다.
+        체크 하면 대표이미지로 등록 됩니다. / 권장 사이즈 300 × 300 px, 최대 이미지 사이즈 100kb까지 가능합니다.
       </UploadGuide>
 
       <UploadActions>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => inputRef.current?.click()}
-          disabled={files.length >= 5}
-        >
+        <Button variant="outlined" size="small" onClick={() => inputRef.current?.click()} disabled={files.length >= 5}>
           사진 추가
         </Button>
 
@@ -54,7 +62,10 @@ export default function ImageUpload({ files, onChange }: Props) {
           variant="outlined"
           size="small"
           color="error"
-          onClick={() => onChange([])}
+          onClick={() => {
+            onChange([]);
+            onPrimaryChange(null);
+          }}
           disabled={files.length === 0}
         >
           선택 삭제
@@ -93,7 +104,7 @@ export default function ImageUpload({ files, onChange }: Props) {
               <FileName variant="caption">{file.name}</FileName>
 
               <MainImageCell>
-                <Checkbox />
+                <Checkbox checked={primaryIndex === index} onChange={() => handlePrimaryToggle(index)} />
               </MainImageCell>
             </ImageRow>
           ))}
