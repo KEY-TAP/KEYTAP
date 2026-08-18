@@ -46,6 +46,7 @@ export default function RegisterForm({ brands, switches }: Props) {
   const [selectedSwitchIds, setSelectedSwitchIds] = useState<number[]>([]);
   const [hashTags, setHashTags] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [primaryIndex, setPrimaryIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSwitchToggle = (switchId: number) => {
@@ -73,7 +74,7 @@ export default function RegisterForm({ brands, switches }: Props) {
       }
       // 3단계: 이미지 업로드
       if (files.length > 0) {
-        await Promise.allSettled(files.map((file) => uploadProductImageClient(file, product.product_id)));
+        await Promise.allSettled(files.map((file, index) => uploadProductImageClient(file, product.product_id, index === primaryIndex)));
       }
 
       router.push("/admin/products");
@@ -162,7 +163,7 @@ export default function RegisterForm({ brands, switches }: Props) {
       <Section>
         <ProductImageTitle variant="h6">상품 이미지</ProductImageTitle>
 
-        <ImageUpload files={files} onChange={setFiles} />
+        <ImageUpload files={files} onChange={setFiles} primaryIndex={primaryIndex} onPrimaryChange={setPrimaryIndex} />
       </Section>
 
       <BottomActions>
