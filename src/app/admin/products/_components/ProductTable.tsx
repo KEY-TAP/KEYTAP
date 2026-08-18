@@ -16,6 +16,11 @@ import MenuItem from "@mui/material/MenuItem";
 import Button from "@mui/material/Button";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 
+interface ProductImage {
+  image_url: string;
+  is_primary: boolean;
+}
+
 interface Product {
   product_id: number;
   product_name: string;
@@ -23,6 +28,7 @@ interface Product {
   description: string | null;
   created_at: string;
   brands: { brand_name: string }[] | null;
+  product_images: ProductImage[] | null;
 }
 
 interface Props {
@@ -30,6 +36,12 @@ interface Props {
 }
 
 const TABLE_COLUMNS = "70px minmax(0, 1fr) 200px 200px 70px";
+
+// 대표 이미지가 있으면 그걸, 없으면 첫 번째 이미지를 반환
+const getThumbnailUrl = (images: Product["product_images"]) => {
+  if (!images || images.length === 0) return null;
+  return images.find((img) => img.is_primary)?.image_url ?? images[0].image_url;
+};
 
 export default function ProductTable({ products }: Props) {
   const router = useRouter();
@@ -110,42 +122,23 @@ export default function ProductTable({ products }: Props) {
               <RowNumber>{index + 1}</RowNumber>
 
               <ProductCell>
-                {/* 이미지 필드 연결 전 퍼블리싱용 썸네일 */}
-                <ProductThumbnail aria-hidden="true" />
+                <ProductThumbnail aria-hidden="true">{getThumbnailUrl(product.product_images) && <ProductThumbnailImage src={getThumbnailUrl(product.product_images)!} alt="" />}</ProductThumbnail>
 
                 <ProductTextArea>
                   <ProductName title={product.product_name}>{product.product_name}</ProductName>
 
-                  {product.description && (
-                    <ProductDescription title={product.description}>
-                      {product.description}
-                    </ProductDescription>
-                  )}
+                  {product.description && <ProductDescription title={product.description}>{product.description}</ProductDescription>}
                 </ProductTextArea>
               </ProductCell>
 
               {/* 브랜드명 */}
-              <DataText title={product.brands?.[0]?.brand_name}>
-                {product.brands?.[0]?.brand_name ?? "-"}
-              </DataText>
+              <DataText title={product.brands?.[0]?.brand_name}>{product.brands?.[0]?.brand_name ?? "-"}</DataText>
 
               {/* 등록일 */}
               <DataText>{product.created_at.slice(0, 10)}</DataText>
 
               <MenuButtonCell>
-                <ProductMenuButton
-                  aria-label={`${product.product_name} 관리 메뉴`}
-                  aria-haspopup="menu"
-                  aria-controls={
-                    selectedId === product.product_id && Boolean(anchorEl)
-                      ? "product-action-menu"
-                      : undefined
-                  }
-                  aria-expanded={
-                    selectedId === product.product_id && Boolean(anchorEl) ? true : undefined
-                  }
-                  onClick={(e) => handleMenuOpen(e, product.product_id)}
-                >
+                <ProductMenuButton aria-label={`${product.product_name} 관리 메뉴`} aria-haspopup="menu" aria-controls={selectedId === product.product_id && Boolean(anchorEl) ? "product-action-menu" : undefined} aria-expanded={selectedId === product.product_id && Boolean(anchorEl) ? true : undefined} onClick={(e) => handleMenuOpen(e, product.product_id)}>
                   <MoreMenuIcon />
                 </ProductMenuButton>
               </MenuButtonCell>
@@ -160,12 +153,7 @@ export default function ProductTable({ products }: Props) {
           전체 목록 내보내기
         </ExportButton>
 
-        <RegisterButton
-          type="button"
-          variant="contained"
-          disableElevation
-          onClick={() => router.push("/admin/products/register")}
-        >
+        <RegisterButton type="button" variant="contained" disableElevation onClick={() => router.push("/admin/products/register")}>
           상품 등록
         </RegisterButton>
       </BottomActions>
@@ -295,6 +283,12 @@ const ProductThumbnail = styled(Box)(({ theme }) => ({
   backgroundColor: theme.palette.grey[200],
 }));
 
+const ProductThumbnailImage = styled("img")({
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+});
+
 const ProductTextArea = styled(Box)({
   flex: 1,
 });
@@ -401,7 +395,6 @@ const BottomActions = styled(Box)({
   alignItems: "center",
   gap: "22px",
   marginTop: "auto",
-  // paddingTop: "20px",
   boxSizing: "border-box",
 });
 
