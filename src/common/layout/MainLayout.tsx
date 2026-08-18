@@ -9,77 +9,19 @@ import ProductCarousel, { type ProductCarouselItem } from "../components/Product
 // mui
 import { styled } from "@mui/material/styles";
 
+interface MainProduct {
+  product_id: number;
+  product_name: string;
+  image_url: string | null;
+  tags?: string[];
+}
+
 type Props = {
   children: React.ReactNode;
+  products: MainProduct[];
 };
 
-const mockItems: ProductCarouselItem[] = [
-  {
-    id: 1,
-    imageSrc: "/noimg.png",
-    title: "NUPHY [Magnetic Jade] Field75 HE 자석축 기계식 키보드 래피드 트리거",
-    tags: ["로우하이듀얼", "커스텀키보드", "래피드트리거"],
-    switchName: "민트축",
-    showLike: true,
-    defaultLiked: true,
-  },
-  {
-    id: 2,
-    imageSrc: "/noimg.png",
-    title: "NUPHY Kick75 유무선 기계식 키보드",
-    tags: ["로우하이듀얼", "커스텀키보드", "래피드트리거"],
-    switchName: "저소음축",
-    showLike: true,
-    defaultLiked: false,
-  },
-  {
-    id: 3,
-    imageSrc: "/noimg.png",
-    title: "NUPHY Air75 HE 초슬림 자석축 키보드",
-    tags: ["로우하이듀얼", "커스텀키보드", "래피드트리거"],
-    switchName: "실버축",
-    showLike: true,
-    defaultLiked: false,
-  },
-  {
-    id: 4,
-    imageSrc: "/noimg.png",
-    title: "NUPHY Halo65 RGB 기계식 키보드",
-    tags: ["로우하이듀얼", "커스텀키보드", "래피드트리거"],
-    switchName: "옐로우축",
-    showLike: true,
-    defaultLiked: true,
-  },
-  {
-    id: 5,
-    imageSrc: "/noimg.png",
-    title: "NUPHY Gem80 커스텀 키보드 베어본",
-    tags: ["로우하이듀얼", "커스텀키보드", "래피드트리거"],
-    switchName: "베어본",
-    showLike: true,
-    defaultLiked: false,
-  },
-  {
-    id: 6,
-    imageSrc: "/noimg.png",
-    title: "NUPHY Wrist Rest 우드 팜레스트",
-    tags: ["로우하이듀얼", "커스텀키보드", "래피드트리거"],
-    switchName: "월넛",
-    showLike: true,
-    defaultLiked: false,
-  },
-  {
-    id: 7,
-    imageSrc: "/noimg.png",
-    title: "NUPHY 77 우드 팜레스트",
-    tags: ["로우하이듀얼", "커스텀키보드", "래피드트리거"],
-    switchName: "월넛",
-    showLike: true,
-    defaultLiked: false,
-  },
-];
-
-export default function MainLayout({ children }: Props) {
+export default function MainLayout({ children, products }: Props) {
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
 
   const handleToggleBottomSheet = () => {
@@ -90,16 +32,20 @@ export default function MainLayout({ children }: Props) {
     setIsBottomSheetOpen(false);
   };
 
+  const carouselItems: ProductCarouselItem[] = products.map((product) => ({
+    id: product.product_id,
+    imageSrc: product.image_url ?? "/noimg.png",
+    title: product.product_name,
+    tags: product.tags,
+    showLike: true,
+  }));
+
   return (
     <>
       <MainWrap>{children}</MainWrap>
 
-      <BottomSheet
-        open={isBottomSheetOpen}
-        onToggle={handleToggleBottomSheet}
-        onClose={handleCloseBottomSheet}
-      >
-        <ProductCarousel title="NUPHY" items={mockItems} />
+      <BottomSheet open={isBottomSheetOpen} onToggle={handleToggleBottomSheet} onClose={handleCloseBottomSheet}>
+        <ProductCarousel title="NUPHY" items={carouselItems} />
       </BottomSheet>
     </>
   );
