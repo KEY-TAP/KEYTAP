@@ -4,7 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { HEARING_ICON, PAUSE_ICON, PLAY_ICON } from "@/common/icons/icons";
 import { useProductStore } from "@/store/useProductStore";
-import BottomSheet from "@/common/components/BottomSheet";
+import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
+import VolumeOffRoundedIcon from "@mui/icons-material/VolumeOffRounded";
 
 // mui
 import { styled } from "@mui/material/styles";
@@ -24,11 +25,19 @@ interface Sound {
   sound_type: string;
 }
 
+interface SwitchOption {
+  switch_id: number;
+  switch_name: string;
+  switch_type: string;
+  is_default: boolean;
+  sounds: Sound[];
+}
+
 interface Product {
   product_id: number;
   product_name: string;
   image_url: string | null;
-  sounds: Sound[];
+  switches: SwitchOption[];
 }
 
 interface Props {
@@ -45,9 +54,21 @@ export default function MainComponent({ products }: Props) {
   const [isPlaying, setIsPlaying] = useState(false);
   const isPlayingRef = useRef(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isSoundOn, setIsSoundOn] = useState(true); // 사운드 on/off 토글, 기본값 ON
 
-  // 전역 상태에서 선택된 제품 가져오기
-  const { selectedProduct, setSelectedProduct } = useProductStore();
+  // 전역 상태에서 선택된 제품 + 스위치 가져오기
+  const {
+    selectedProduct,
+    selectedSwitchId,
+    setSelectedProduct,
+    setSelectedSwitchId,
+  } = useProductStore();
+
+  // 선택된 제품 안에서 실제로 사운드를 재생할 스위치
+  const selectedSwitch =
+    selectedProduct?.switches.find((sw) => sw.switch_id === selectedSwitchId) ??
+    selectedProduct?.switches[0] ??
+    null;
 
   // long 사운드 오디오 객체 (재생/정지 제어용)
   const longAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -55,7 +76,7 @@ export default function MainComponent({ products }: Props) {
   // 첫 진입 시 랜덤으로 제품 선택
   useEffect(() => {
     if (products.length === 0) return;
-    if (selectedProduct) return; // 이미 선택된 제품 있으면 스킵
+    if (selectedProduct) return;
 
     const randomIndex = Math.floor(Math.random() * products.length);
     setSelectedProduct(products[randomIndex]);
@@ -63,8 +84,11 @@ export default function MainComponent({ products }: Props) {
 
   // single 사운드 재생 (키 누를 때마다)
   const playSound = () => {
-    if (!selectedProduct) return;
-    const singleSound = selectedProduct.sounds.find((s) => s.sound_type === "single");
+    if (!isSoundOn) return;
+    if (!selectedSwitch) return;
+    const singleSound = selectedSwitch.sounds.find(
+      (s) => s.sound_type === "single",
+    );
     if (!singleSound) return;
 
     // 새 Audio 객체 생성해서 즉시 재생 (연타 가능)
@@ -73,37 +97,64 @@ export default function MainComponent({ products }: Props) {
   };
 
   // long 사운드 재생/정지 (플레이 버튼)
+  // isPlayingRef로 체크해야 클로저 문제 없이 정확한 상태 확인 가능
   const toggleLongSound = () => {
-    if (!selectedProduct) return;
-    const longSound = selectedProduct.sounds.find((s) => s.sound_type === "long");
+    if (!isSoundOn) return;
+    if (!selectedSwitch) return;
+    const longSound = selectedSwitch.sounds.find(
+      (s) => s.sound_type === "long",
+    );
     if (!longSound) return;
 
-    if (isPlaying) {
+    if (isPlayingRef.current) {
       // 정지
       longAudioRef.current?.pause();
       longAudioRef.current = null;
+      isPlayingRef.current = false;
       setIsPlaying(false);
     } else {
       // 재생
       const audio = new Audio(longSound.sound_url);
       audio.play().catch(() => {});
       // 재생 끝나면 자동으로 정지 상태로 변경
-      audio.onended = () => setIsPlaying(false);
+      audio.onended = () => {
+        isPlayingRef.current = false;
+        setIsPlaying(false);
+      };
       longAudioRef.current = audio;
+      isPlayingRef.current = true;
       setIsPlaying(true);
     }
   };
 
-  // 제품 변경 시 long 사운드 정지
+  // 제품/스위치 변경 시 long 사운드 정지
   useEffect(() => {
-    if (longAudioRef.current) {
-      longAudioRef.current.pause();
-      longAudioRef.current.onended = null;
-      longAudioRef.current = null;
-      isPlayingRef.current = false;
-    }
-    isPlayingRef.current = false;
-  }, [selectedProduct]);
+    return () => {
+      if (longAudioRef.current) {
+        longAudioRef.current.pause();
+        longAudioRef.current.onended = null;
+        longAudioRef.current = null;
+        isPlayingRef.current = false;
+      }
+    };
+  }, [selectedProduct, selectedSwitchId]);
+
+  // 사운드 토글: OFF로 전환하는 경우 재생 중인 long 사운드도 즉시 정지
+  const handleToggleSound = () => {
+    setIsSoundOn((prev) => {
+      const next = !prev;
+
+      if (!next && longAudioRef.current) {
+        longAudioRef.current.pause();
+        longAudioRef.current.onended = null;
+        longAudioRef.current = null;
+        isPlayingRef.current = false;
+        setIsPlaying(false);
+      }
+
+      return next;
+    });
+  };
 
   const addPressedKey = (key: string) => {
     setPressedKeys((prev) => {
@@ -124,7 +175,7 @@ export default function MainComponent({ products }: Props) {
 
   const handlePressKeyDown = (e: KeyboardEvent) => {
     addPressedKey(e.code);
-    playSound(); // 키 누를 때 single 사운드 재생
+    playSound();
 
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.repeat) return;
@@ -168,7 +219,7 @@ export default function MainComponent({ products }: Props) {
     setIsInputFocused(true);
     if (!key.code) return;
     addPressedKey(key.code);
-    playSound(); // 가상 키보드도 single 사운드 재생
+    playSound();
 
     if (key.code === "Backspace") {
       setTypedText((prev) => prev.slice(0, -1));
@@ -197,7 +248,10 @@ export default function MainComponent({ products }: Props) {
   const handleMobileTouchInput = () => {
     mobileInputRef.current?.focus();
   };
-  const handleMobileInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+
+  const handleMobileInputChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement>,
+  ) => {
     setTypedText(e.target.value);
   };
 
@@ -209,10 +263,27 @@ export default function MainComponent({ products }: Props) {
   return (
     <Main>
       <Section>
-        <GuideRow>
-          <Image src={HEARING_ICON} alt="play icon" width={28} height={28} />
-          <GuideText>소리를 듣기 위해 영문키를 눌러주세요.</GuideText>
-        </GuideRow>
+        <TopRow>
+          <GuideRow>
+            <Image src={HEARING_ICON} alt="play icon" width={28} height={28} />
+            <GuideText>소리를 듣기 위해 영문키를 눌러주세요.</GuideText>
+          </GuideRow>
+
+          <SoundToggleButton
+            type="button"
+            active={isSoundOn ? 1 : 0}
+            onClick={handleToggleSound}
+            aria-pressed={isSoundOn}
+            aria-label={isSoundOn ? "사운드 끄기" : "사운드 켜기"}
+          >
+            {isSoundOn ? (
+              <VolumeUpRoundedIcon fontSize="small" />
+            ) : (
+              <VolumeOffRoundedIcon fontSize="small" />
+            )}
+            <span>{isSoundOn ? "사운드 ON" : "사운드 OFF"}</span>
+          </SoundToggleButton>
+        </TopRow>
 
         <DisplayBox onClick={handleDisplayFocus}>
           <DisplayText hasValue={!!typedText}>
@@ -223,19 +294,46 @@ export default function MainComponent({ products }: Props) {
 
         {isMobile ? (
           <MobileInputSection>
-            <MobileTouchButton type="button" variant="outlined" onClick={handleMobileTouchInput}>
+            <MobileTouchButton
+              type="button"
+              variant="outlined"
+              onClick={handleMobileTouchInput}
+            >
               이곳을 터치하여 입력해보세요
             </MobileTouchButton>
-            <HiddenMobileInput ref={mobileInputRef} value={typedText} onChange={handleMobileInputChange} onFocus={() => setIsInputFocused(true)} onBlur={() => setIsInputFocused(false)} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} />
+            <HiddenMobileInput
+              ref={mobileInputRef}
+              value={typedText}
+              onChange={handleMobileInputChange}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => setIsInputFocused(false)}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+            />
           </MobileInputSection>
         ) : (
           <KeyboardWrap>
             {KEYBOARD_ROWS.map((row, rowIndex) => (
               <KeyRow key={`row-${rowIndex}`}>
                 {row.map((key, index) => {
-                  const isPressed = key.code ? pressedKeys.has(key.code) : false;
+                  const isPressed = key.code
+                    ? pressedKeys.has(key.code)
+                    : false;
                   return (
-                    <KeyButton key={`${key.label}-${index}`} type="button" active={isPressed ? 1 : 0} widthRatio={key.width ?? 1} onMouseDown={() => handleVirtualKeyDown(key)} onMouseUp={() => handleVirtualKeyUp(key)} onMouseLeave={() => handleVirtualKeyUp(key)} onTouchStart={() => handleVirtualKeyDown(key)} onTouchEnd={() => handleVirtualKeyUp(key)} onContextMenu={(e) => e.preventDefault()}>
+                    <KeyButton
+                      key={`${key.label}-${index}`}
+                      type="button"
+                      active={isPressed ? 1 : 0}
+                      widthRatio={key.width ?? 1}
+                      onMouseDown={() => handleVirtualKeyDown(key)}
+                      onMouseUp={() => handleVirtualKeyUp(key)}
+                      onMouseLeave={() => handleVirtualKeyUp(key)}
+                      onTouchStart={() => handleVirtualKeyDown(key)}
+                      onTouchEnd={() => handleVirtualKeyUp(key)}
+                      onContextMenu={(e) => e.preventDefault()}
+                    >
                       {key.label}
                     </KeyButton>
                   );
@@ -248,21 +346,40 @@ export default function MainComponent({ products }: Props) {
         {/* 선택된 제품명 + 플레이 버튼 */}
         <AudioSection>
           <AudioButton type="button" onClick={toggleLongSound}>
-            {isPlaying ? <Image src={PAUSE_ICON} alt="pause icon" width={28} height={28} /> : <Image src={PLAY_ICON} alt="play icon" width={28} height={28} />}
-            {/* 선택된 제품명 표시 */}
-            <AudioTitle>{selectedProduct?.product_name ?? "모델을 선택해주세요"}</AudioTitle>
+            {isPlaying ? (
+              <Image src={PAUSE_ICON} alt="pause icon" width={28} height={28} />
+            ) : (
+              <Image src={PLAY_ICON} alt="play icon" width={28} height={28} />
+            )}
+            <AudioTitle>
+              {selectedProduct?.product_name ?? "모델을 선택해주세요"}
+            </AudioTitle>
           </AudioButton>
-          <AudioDescription>미리 녹음된 타건음을 들으실 수 있습니다.</AudioDescription>
+
+          {selectedProduct && selectedProduct.switches.length > 1 && (
+            <SwitchPicker>
+              {selectedProduct.switches.map((sw) => (
+                <SwitchPickerButton
+                  key={sw.switch_id}
+                  type="button"
+                  active={selectedSwitchId === sw.switch_id ? 1 : 0}
+                  onClick={() => setSelectedSwitchId(sw.switch_id)}
+                >
+                  {sw.switch_name}
+                </SwitchPickerButton>
+              ))}
+            </SwitchPicker>
+          )}
+
+          <AudioDescription>
+            미리 녹음된 타건음을 들으실 수 있습니다.
+          </AudioDescription>
         </AudioSection>
       </Section>
-
-      {/* 바텀시트 */}
-      <BottomSheet products={products} />
     </Main>
   );
 }
 
-// 기존 스타일드 컴포넌트 그대로 유지
 const Main = styled("main")(() => ({ width: "100%" }));
 
 const Section = styled(Box)(({ theme }) => ({
@@ -272,11 +389,58 @@ const Section = styled(Box)(({ theme }) => ({
   [theme.breakpoints.down("sm")]: {},
 }));
 
+const TopRow = styled(Box)(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  flexWrap: "wrap",
+  gap: "12px",
+  marginBottom: "26px",
+  [theme.breakpoints.down("sm")]: {
+    marginBottom: "20px",
+  },
+}));
+
 const GuideRow = styled(Box)(() => ({
   display: "flex",
   alignItems: "center",
   gap: "10px",
-  marginBottom: "26px",
+}));
+
+const SoundToggleButton = styled("button", {
+  shouldForwardProp: (prop) => prop !== "active",
+})<{ active?: number }>(({ theme, active }) => ({
+  display: "inline-flex",
+  alignItems: "center",
+  flexShrink: 0,
+  gap: "6px",
+  height: "36px",
+  padding: "0 14px",
+  borderRadius: "5px",
+  border: `1px solid ${active ? theme.palette.primary.main : theme.palette.divider}`,
+  background: active
+    ? theme.palette.primary.main
+    : theme.palette.background.default,
+  color: active ? theme.palette.common.white : theme.palette.text.secondary,
+  fontSize: "0.875rem",
+  fontWeight: 600,
+  cursor: "pointer",
+  transition: "all .2s ease",
+
+  "& svg": { fontSize: "1.125rem" },
+
+  "&:hover": {
+    borderColor: theme.palette.primary.main,
+    color: active ? theme.palette.common.white : theme.palette.primary.main,
+  },
+
+  [theme.breakpoints.down("sm")]: {
+    height: "32px",
+    padding: "0 10px",
+    fontSize: "0.8rem",
+
+    "& span": { display: "none" },
+  },
 }));
 
 const GuideText = styled(Typography)(({ theme }) => ({
@@ -345,28 +509,35 @@ const KeyRow = styled(Box)(() => ({
 
 const KeyButton = styled("button", {
   shouldForwardProp: (prop) => prop !== "active" && prop !== "widthRatio",
-})<{ active?: number; widthRatio?: number }>(({ theme, active, widthRatio }) => ({
-  flex: `${widthRatio ?? 1} 1 0`,
-  minWidth: 0,
-  height: "60px",
-  borderRadius: "11px",
-  border: `1px solid ${active ? "rgba(156, 157, 170, 0.8)" : "#9C9DAA"}`,
-  background: active ? "rgba(173, 179, 255, 0.4)" : theme.palette.common.white,
-  color: theme.palette.text.secondary,
-  fontSize: "1rem",
-  wordBreak: "break-all",
-  fontWeight: 500,
-  boxShadow: active ? "0 2px 4px rgba(0,0,0,0.08)" : "0 4px 8px rgba(0,0,0,0.10)",
-  cursor: "pointer",
-  transition: "transform .12s ease, background-color .12s ease, border-color .12s ease, box-shadow .12s ease",
-  userSelect: "none",
-  transform: active ? "translateY(2px)" : "translateY(0)",
-  "&:active": {
-    transform: "translateY(2px)",
-    background: "rgba(173, 179, 255, 0.4)",
-    borderColor: "rgba(156, 157, 170, 0.8)",
-  },
-}));
+})<{ active?: number; widthRatio?: number }>(
+  ({ theme, active, widthRatio }) => ({
+    flex: `${widthRatio ?? 1} 1 0`,
+    minWidth: 0,
+    height: "60px",
+    borderRadius: "11px",
+    border: `1px solid ${active ? "rgba(156, 157, 170, 0.8)" : "#9C9DAA"}`,
+    background: active
+      ? "rgba(173, 179, 255, 0.4)"
+      : theme.palette.common.white,
+    color: theme.palette.text.secondary,
+    fontSize: "1rem",
+    wordBreak: "break-all",
+    fontWeight: 500,
+    boxShadow: active
+      ? "0 2px 4px rgba(0,0,0,0.08)"
+      : "0 4px 8px rgba(0,0,0,0.10)",
+    cursor: "pointer",
+    transition:
+      "transform .12s ease, background-color .12s ease, border-color .12s ease, box-shadow .12s ease",
+    userSelect: "none",
+    transform: active ? "translateY(2px)" : "translateY(0)",
+    "&:active": {
+      transform: "translateY(2px)",
+      background: "rgba(173, 179, 255, 0.4)",
+      borderColor: "rgba(156, 157, 170, 0.8)",
+    },
+  }),
+);
 
 const MobileInputSection = styled(Box)(() => ({ marginBottom: "28px" }));
 
@@ -428,4 +599,32 @@ const AudioDescription = styled(Typography)(({ theme }) => ({
   fontSize: "1rem",
   color: theme.palette.text.secondary,
   textAlign: "center",
+}));
+
+const SwitchPicker = styled(Box)(() => ({
+  display: "flex",
+  flexWrap: "wrap",
+  justifyContent: "center",
+  gap: "8px",
+  marginTop: "16px",
+}));
+
+const SwitchPickerButton = styled("button", {
+  shouldForwardProp: (prop) => prop !== "active",
+})<{ active?: number }>(({ theme, active }) => ({
+  border: `1px solid ${active ? theme.palette.primary.main : theme.palette.divider}`,
+  borderRadius: "5px",
+  padding: "8px 16px",
+  fontSize: "0.9rem",
+  fontWeight: active ? 700 : 400,
+  color: active ? theme.palette.common.white : theme.palette.text.primary,
+  backgroundColor: active
+    ? theme.palette.primary.main
+    : theme.palette.background.default,
+  cursor: "pointer",
+  transition: "all .2s ease",
+
+  "&:hover": {
+    borderColor: theme.palette.primary.main,
+  },
 }));
