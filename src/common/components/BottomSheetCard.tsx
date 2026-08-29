@@ -22,6 +22,8 @@ type ProductCardProps = {
   defaultChecked?: boolean;
   defaultLiked?: boolean;
 
+  checked?: boolean;
+
   onCheckChange?: (checked: boolean) => boolean | void;
   onLikeChange?: (liked: boolean) => void;
 };
@@ -38,11 +40,15 @@ export default function BottomSheetCard({
   defaultChecked = false,
   defaultLiked = false,
 
+  checked: controlledChecked,
+
   onCheckChange,
   onLikeChange,
 }: ProductCardProps) {
-  const [checked, setChecked] = useState(defaultChecked);
+  const [internalChecked, setInternalChecked] = useState(defaultChecked);
   const [liked, setLiked] = useState(defaultLiked);
+
+  const checked = controlledChecked !== undefined ? controlledChecked : internalChecked;
 
   const formattedPrice = typeof price === "number" ? `${price.toLocaleString()}원` : price;
 
@@ -56,7 +62,9 @@ export default function BottomSheetCard({
       return;
     }
 
-    setChecked(nextChecked);
+    if (controlledChecked === undefined) {
+      setInternalChecked(nextChecked);
+    }
   };
 
   const handleToggleLike = () => {

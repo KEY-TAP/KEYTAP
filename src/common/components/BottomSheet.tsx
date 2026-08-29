@@ -15,11 +15,19 @@ interface Sound {
   sound_type: string;
 }
 
+interface SwitchOption {
+  switch_id: number;
+  switch_name: string;
+  switch_type: string;
+  is_default: boolean;
+  sounds: Sound[];
+}
+
 interface Product {
   product_id: number;
   product_name: string;
   image_url: string | null;
-  sounds: Sound[];
+  switches: SwitchOption[];
 }
 
 interface Props {
@@ -60,9 +68,18 @@ export default function BottomSheet({ products }: Props) {
       {/* 핸들 영역 (드래그 + 버튼) */}
       <Handle onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <HandleBar />
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            px: 2,
+          }}
+        >
           <Typography variant="body2" color="text.secondary">
-            {selectedProduct ? selectedProduct.product_name : "모델을 선택해주세요"}
+            {selectedProduct
+              ? selectedProduct.product_name
+              : "모델을 선택해주세요"}
           </Typography>
           <IconButton size="small" onClick={() => setIsOpen((prev) => !prev)}>
             {isOpen ? <KeyboardArrowDownIcon /> : <KeyboardArrowUpIcon />}
@@ -73,9 +90,16 @@ export default function BottomSheet({ products }: Props) {
       {/* 제품 목록 */}
       <ProductList>
         {products.map((product) => (
-          <ProductItem key={product.product_id} isSelected={selectedProduct?.product_id === product.product_id} onClick={() => handleSelectProduct(product)}>
+          <ProductItem
+            key={product.product_id}
+            isSelected={selectedProduct?.product_id === product.product_id}
+            onClick={() => handleSelectProduct(product)}
+          >
             {/* 제품 이미지 */}
-            <ProductImage src={product.image_url ?? "/image/default-image.png"} alt={product.product_name} />
+            <ProductImage
+              src={product.image_url ?? "/image/default-image.png"}
+              alt={product.product_name}
+            />
             <Typography
               variant="caption"
               sx={{
@@ -144,8 +168,12 @@ const ProductItem = styled(Box, {
   cursor: "pointer",
   padding: "8px",
   borderRadius: "12px",
-  border: isSelected ? `2px solid ${theme.palette.primary.main}` : "2px solid transparent",
-  backgroundColor: isSelected ? `${theme.palette.primary.main}10` : "transparent",
+  border: isSelected
+    ? `2px solid ${theme.palette.primary.main}`
+    : "2px solid transparent",
+  backgroundColor: isSelected
+    ? `${theme.palette.primary.main}10`
+    : "transparent",
   transition: "all 0.2s ease",
 }));
 

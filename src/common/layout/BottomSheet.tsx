@@ -14,15 +14,28 @@ type BottomSheetProps = {
   onToggle: () => void;
   onClose: () => void;
   children?: React.ReactNode;
+  thumbnailSrc?: string | null;
 };
 
-export default function BottomSheet({ open, onToggle, onClose, children }: BottomSheetProps) {
+export default function BottomSheet({
+  open,
+  onToggle,
+  onClose,
+  children,
+  thumbnailSrc,
+}: BottomSheetProps) {
   return (
     <>
       <Dimmed open={open ? 1 : 0} onClick={onClose} />
 
       <SheetWrap open={open ? 1 : 0}>
-        <ToggleButton type="button" onClick={onToggle} aria-label="바텀 시트 토글">
+        <ToggleButton
+          type="button"
+          onClick={onToggle}
+          aria-label="바텀 시트 토글"
+        >
+          {thumbnailSrc && <HandleThumbnail src={thumbnailSrc} alt="" />}
+
           <KeyboardIcon open={open ? 1 : 0}>
             <ArrowDropDownIcon />
           </KeyboardIcon>
@@ -72,6 +85,10 @@ const ToggleButton = styled(IconButton)(({ theme }) => ({
   transform: "translateX(-50%)",
   width: "202px",
   height: "48px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "8px",
   borderTopLeftRadius: "10px",
   borderTopRightRadius: "10px",
   borderBottomLeftRadius: 0,
@@ -87,6 +104,20 @@ const ToggleButton = styled(IconButton)(({ theme }) => ({
     width: "120px",
     height: "36px",
     top: "-36px",
+    gap: "6px",
+  },
+}));
+
+const HandleThumbnail = styled("img")(({ theme }) => ({
+  width: "28px",
+  height: "28px",
+  borderRadius: "5px",
+  objectFit: "cover",
+  flexShrink: 0,
+
+  [theme.breakpoints.down("sm")]: {
+    width: "20px",
+    height: "20px",
   },
 }));
 
