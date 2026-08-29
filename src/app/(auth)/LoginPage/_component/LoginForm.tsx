@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { supabase } from "@/lib/supabaseClient";
 
@@ -32,9 +32,12 @@ const initialFormValues: LoginFormValues = {
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect");
 
   const [showPw, setShowPw] = useState(false);
-  const [formValues, setFormValues] = useState<LoginFormValues>(initialFormValues);
+  const [formValues, setFormValues] =
+    useState<LoginFormValues>(initialFormValues);
   const [errors, setErrors] = useState<FieldErrors>({});
 
   const signInMutation = useSignInMutation();
@@ -54,17 +57,22 @@ export default function LoginForm() {
     }
   };
 
-  const handleChange = (name: keyof LoginFormValues) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const nextValues = {
-      ...formValues,
-      [name]: e.target.value,
+  const handleChange =
+    (name: keyof LoginFormValues) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const nextValues = {
+        ...formValues,
+        [name]: e.target.value,
+      };
+
+      setFormValues(nextValues);
+      validateField(name, nextValues);
     };
 
-    setFormValues(nextValues);
-    validateField(name, nextValues);
-  };
-
-  const validateField = (name: keyof LoginFormValues, nextValues: LoginFormValues) => {
+  const validateField = (
+    name: keyof LoginFormValues,
+    nextValues: LoginFormValues,
+  ) => {
     const result = loginSchema.safeParse(nextValues);
 
     if (result.success) {
@@ -125,9 +133,14 @@ export default function LoginForm() {
       await signInMutation.mutateAsync(formValues);
 
       alert("로그인되었습니다.");
-      router.push("/MainPage");
+      router.push(
+        redirectTo && redirectTo.startsWith("/") ? redirectTo : "/MainPage",
+      );
     } catch (error) {
-      const message = error instanceof Error ? error.message : "로그인 중 오류가 발생했습니다.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "로그인 중 오류가 발생했습니다.";
 
       alert(message);
     }
@@ -141,7 +154,19 @@ export default function LoginForm() {
         {/* 이메일 */}
         <Field>
           <Label htmlFor="login-email">ID</Label>
-          <InputField id="login-email" name="email" type="email" autoComplete="email" fullWidth placeholder="이메일을 입력해주세요." size="small" value={formValues.email} onChange={handleChange("email")} error={!!errors.email} helperText={errors.email} />
+          <InputField
+            id="login-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            fullWidth
+            placeholder="이메일을 입력해주세요."
+            size="small"
+            value={formValues.email}
+            onChange={handleChange("email")}
+            error={!!errors.email}
+            helperText={errors.email}
+          />
         </Field>
 
         {/* 비밀번호 */}
@@ -162,8 +187,16 @@ export default function LoginForm() {
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  <IconButton aria-label={showPw ? "비밀번호 숨기기" : "비밀번호 보기"} onClick={() => setShowPw((v) => !v)} edge="end">
-                    {showPw ? <VisibilityOutlinedIcon /> : <VisibilityOffOutlinedIcon />}
+                  <IconButton
+                    aria-label={showPw ? "비밀번호 숨기기" : "비밀번호 보기"}
+                    onClick={() => setShowPw((v) => !v)}
+                    edge="end"
+                  >
+                    {showPw ? (
+                      <VisibilityOutlinedIcon />
+                    ) : (
+                      <VisibilityOffOutlinedIcon />
+                    )}
                   </IconButton>
                 </InputAdornment>
               ),
@@ -174,15 +207,33 @@ export default function LoginForm() {
           </ForgotPassword>
         </Field>
 
-        <LoginButton type="submit" fullWidth variant="contained" color="primary" disabled={signInMutation.isPending}>
+        <LoginButton
+          type="submit"
+          fullWidth
+          variant="contained"
+          color="primary"
+          disabled={signInMutation.isPending}
+        >
           <span>{signInMutation.isPending ? "로그인 중..." : "로그인"}</span>
         </LoginButton>
 
-        <SignUpButton type="button" onClick={() => router.push("/SignUpPage")} fullWidth variant="outlined" color="inherit">
+        <SignUpButton
+          type="button"
+          onClick={() => router.push("/SignUpPage")}
+          fullWidth
+          variant="outlined"
+          color="inherit"
+        >
           <span>회원가입</span>
         </SignUpButton>
 
-        <LoginWithGoogle type="button" onClick={handleGoogleLogin} fullWidth variant="outlined" color="inherit">
+        <LoginWithGoogle
+          type="button"
+          onClick={handleGoogleLogin}
+          fullWidth
+          variant="outlined"
+          color="inherit"
+        >
           <i>
             <GoogleIcon />
           </i>
