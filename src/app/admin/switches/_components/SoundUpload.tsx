@@ -17,12 +17,20 @@ interface SoundFile {
   soundType: "single" | "long";
 }
 
+interface ExistingSound {
+  sound_id: number;
+  sound_url: string;
+  sound_type: string;
+}
+
 interface Props {
   soundFiles: SoundFile[];
   onChange: (soundFiles: SoundFile[]) => void;
+  existingSounds?: ExistingSound[];
+  onDeleteExisting?: (soundId: number) => void;
 }
 
-export default function SoundUpload({ soundFiles, onChange }: Props) {
+export default function SoundUpload({ soundFiles, onChange, existingSounds = [], onDeleteExisting }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // 체크된 항목 인덱스 목록
@@ -73,6 +81,36 @@ export default function SoundUpload({ soundFiles, onChange }: Props) {
         <br />
         사운드 유형을 Single 또는 Long으로 선택해주세요.
       </UploadGuide>
+
+      {existingSounds.length > 0 && (
+        <>
+          <ExistingSoundLabel variant="body2">등록된 사운드</ExistingSoundLabel>
+
+          <SoundList>
+            {existingSounds.map((sound) => (
+              <SoundRow key={sound.sound_id}>
+                <PreviewCell>
+                  <AudioPlayer controls src={sound.sound_url} />
+
+                  <FileName variant="caption">
+                    {sound.sound_type === "long" ? "Long" : "Single"} 사운드
+                  </FileName>
+                </PreviewCell>
+
+                <ExistingDeleteButton
+                  type="button"
+                  variant="outlined"
+                  size="small"
+                  color="error"
+                  onClick={() => onDeleteExisting?.(sound.sound_id)}
+                >
+                  삭제
+                </ExistingDeleteButton>
+              </SoundRow>
+            ))}
+          </SoundList>
+        </>
+      )}
 
       <UploadActions>
         <Button variant="outlined" size="small" onClick={() => inputRef.current?.click()}>
@@ -154,10 +192,16 @@ const UploadGuide = styled(Typography)(({ theme }) => ({
   color: theme.palette.text.secondary,
 }));
 
+const ExistingSoundLabel = styled(Typography)(({ theme }) => ({
+  marginBottom: "8px",
+  color: theme.palette.text.secondary,
+}));
+
 const UploadActions = styled(Box)({
   display: "flex",
   alignItems: "center",
   gap: "10px",
+  marginTop: "24px",
   marginBottom: "40px",
 
   "& Button": {
@@ -240,4 +284,13 @@ const SoundTypeFormControl = styled(FormControl)({
   "& .MuiOutlinedInput-root": {
     borderRadius: "5px",
   },
+});
+
+const ExistingDeleteButton = styled(Button)({
+  flexShrink: 0,
+  width: "80px",
+  height: "36px",
+  padding: "6px",
+  borderRadius: "5px",
+  fontSize: "0.9rem",
 });

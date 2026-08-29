@@ -15,6 +15,7 @@ import {
   createSwitchClient,
   updateSwitchClient,
   uploadSoundClient,
+  deleteSoundClient,
 } from "@/lib/api/switchesClient";
 import SoundUpload from "./SoundUpload";
 
@@ -49,7 +50,17 @@ export default function SwitchForm({ switchData }: Props) {
   const [switchType, setSwitchType] = useState(switchData?.switch_type ?? "");
   const [manufacture, setManufacture] = useState(switchData?.manufacture ?? "");
   const [soundFiles, setSoundFiles] = useState<SoundFile[]>([]);
+  const [existingSounds, setExistingSounds] = useState<Sound[]>(switchData?.sounds ?? []);
   const [loading, setLoading] = useState(false);
+
+  // 기존에 등록된 사운드 삭제 (Storage + DB)
+  const handleDeleteExistingSound = async (soundId: number) => {
+    const target = existingSounds.find((sound) => sound.sound_id === soundId);
+    if (!target) return;
+
+    await deleteSoundClient(soundId, target.sound_url);
+    setExistingSounds((prev) => prev.filter((sound) => sound.sound_id !== soundId));
+  };
 
   const handleSubmit = async () => {
     if (!switchName || !switchType) return;
@@ -140,7 +151,12 @@ export default function SwitchForm({ switchData }: Props) {
       <Section>
         <SoundTitle variant="h6">스위치 사운드</SoundTitle>
 
-        <SoundUpload soundFiles={soundFiles} onChange={setSoundFiles} />
+        <SoundUpload
+          soundFiles={soundFiles}
+          onChange={setSoundFiles}
+          existingSounds={existingSounds}
+          onDeleteExisting={handleDeleteExistingSound}
+        />
       </Section>
 
       <BottomActions>
