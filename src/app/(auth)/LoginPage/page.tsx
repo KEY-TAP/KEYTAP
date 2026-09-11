@@ -1,6 +1,7 @@
 // 로그인페이지
 
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import LoginForm from "./_component/LoginForm";
 
 export const metadata: Metadata = {
@@ -10,5 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default function Login() {
-  return <LoginForm />;
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
 }

@@ -2,8 +2,10 @@
 
 import React, { useRef } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { useProductStore } from "@/store/useProductStore";
 
 // 이미지
 import headphone01 from "../../../../public/headphone01.png";
@@ -19,7 +21,48 @@ import { styled } from "@mui/material/styles";
 // gsap 플러그인 등록
 gsap.registerPlugin(useGSAP);
 
-const LandingPage = () => {
+interface Sound {
+  sound_id: number;
+  sound_url: string;
+  sound_type: string;
+}
+
+interface SwitchOption {
+  switch_id: number;
+  switch_name: string;
+  switch_type: string;
+  is_default: boolean;
+  sounds: Sound[];
+}
+
+interface BubbleProduct {
+  product_id: number;
+  product_name: string;
+  image_url: string | null;
+  switches: SwitchOption[];
+}
+
+interface Props {
+  // 인트로 말풍선 2개에 각각 표시할 랜덤 상품 (page.tsx에서 서버 렌더링 시점에 랜덤으로 선택되어 내려옴)
+  bubbleProducts: BubbleProduct[];
+}
+
+const LandingPage = ({ bubbleProducts }: Props) => {
+  const router = useRouter();
+  const setSelectedProduct = useProductStore(
+    (state) => state.setSelectedProduct,
+  );
+
+  const firstBubbleProduct = bubbleProducts[0];
+  const secondBubbleProduct = bubbleProducts[1];
+
+  // 말풍선(이미지) 클릭 시 해당 상품을 선택 상태로 만들고 MainPage로 이동
+  const handleBubbleClick = (product?: BubbleProduct) => {
+    if (!product) return;
+    setSelectedProduct(product);
+    router.push("/MainPage");
+  };
+
   const rootRef = useRef<HTMLDivElement | null>(null);
   const imageWrapRef = useRef<HTMLDivElement | null>(null);
   const firstRowRef = useRef<HTMLDivElement | null>(null);
@@ -176,7 +219,9 @@ const LandingPage = () => {
         item.addEventListener("mousemove", handleMouseMove);
         item.addEventListener("mouseleave", handleMouseLeave);
 
-        item.addEventListener("touchstart", handleTouchStart, { passive: true });
+        item.addEventListener("touchstart", handleTouchStart, {
+          passive: true,
+        });
         item.addEventListener("touchmove", handleTouchMove, { passive: true });
         item.addEventListener("touchend", handleTouchEnd);
         item.addEventListener("touchcancel", handleTouchEnd);
@@ -207,9 +252,12 @@ const LandingPage = () => {
       <FlowArea>
         <ImageWrap ref={imageWrapRef}>
           <FlowRow ref={firstRowRef}>
-            <div className="hover">
+            <div
+              className="hover"
+              onClick={() => handleBubbleClick(firstBubbleProduct)}
+            >
               <Image src={keyboard01h} alt="키보드이미지" className="bubble" />
-              <p>NUPHY KICK75</p>
+              {firstBubbleProduct && <p>{firstBubbleProduct.product_name}</p>}
               <Image src={headphone01} alt="헤드폰이미지" />
             </div>
 
@@ -218,17 +266,23 @@ const LandingPage = () => {
               <Image src={mobilePhone01} alt="핸드폰이미지" />
             </div>
 
-            <div className="hover">
+            <div
+              className="hover"
+              onClick={() => handleBubbleClick(secondBubbleProduct)}
+            >
               <Image src={headset01} alt="이어폰이미지" />
               <Image src={keyboard02h} alt="키보드이미지" className="bubble" />
-              <p>NUPHY KICK75</p>
+              {secondBubbleProduct && <p>{secondBubbleProduct.product_name}</p>}
             </div>
           </FlowRow>
 
           <FlowRow aria-hidden="true">
-            <div className="hover">
+            <div
+              className="hover"
+              onClick={() => handleBubbleClick(firstBubbleProduct)}
+            >
               <Image src={keyboard01h} alt="키보드이미지" className="bubble" />
-              <p>NUPHY KICK75</p>
+              {firstBubbleProduct && <p>{firstBubbleProduct.product_name}</p>}
               <Image src={headphone01} alt="헤드폰이미지" />
             </div>
 
@@ -237,10 +291,13 @@ const LandingPage = () => {
               <Image src={mobilePhone01} alt="핸드폰이미지" />
             </div>
 
-            <div className="hover">
+            <div
+              className="hover"
+              onClick={() => handleBubbleClick(secondBubbleProduct)}
+            >
               <Image src={headset01} alt="이어폰이미지" />
               <Image src={keyboard02h} alt="키보드이미지" className="bubble" />
-              <p>NUPHY KICK75</p>
+              {secondBubbleProduct && <p>{secondBubbleProduct.product_name}</p>}
             </div>
           </FlowRow>
         </ImageWrap>
@@ -378,6 +435,7 @@ const FlowRow = styled("div")(({ theme }) => ({
 
   "& .hover": {
     position: "relative",
+    cursor: "pointer",
   },
 
   "& .hover p": {
