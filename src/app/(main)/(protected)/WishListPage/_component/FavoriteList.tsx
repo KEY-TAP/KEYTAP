@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 // mui
 import { styled } from "@mui/material/styles";
@@ -14,137 +14,87 @@ import Alert from "@mui/material/Alert";
 import CompareModal, { type CompareProduct } from "./CompareModal";
 import ProductCard from "@/common/components/ProductCard";
 
-type FavoriteListItem = {
-  id: number;
-  imageSrc?: string;
-  title: string;
-  price: number;
-  defaultChecked?: boolean;
-  defaultLiked?: boolean;
-};
+// api
+import { getCurrentUserId, unlikeProductClient } from "@/lib/api/likesClient";
 
-export default function FavoriteList() {
-  const FavoriteListItems = useMemo<FavoriteListItem[]>(
-    () => [
-      {
-        id: 1,
-        title: "NUPHY [Magnetic Jade] Field75 HE 자석축 기계식 키보드 래피드 트리거",
-        imageSrc: "/noimg.png",
-        price: 299000,
-        defaultChecked: true,
-        defaultLiked: true,
-      },
-      {
-        id: 2,
-        title: "NUPHY [Magnetic Jade] Field75 HE 자석축 기계식 키보드 래피드 트리거",
-        imageSrc: "/noimg.png",
-        price: 299000,
-        defaultChecked: false,
-        defaultLiked: true,
-      },
-      {
-        id: 3,
-        title: "NUPHY [Magnetic Jade] Field75 HE 자석축 기계식 키보드 래피드 트리거",
-        imageSrc: "/noimg.png",
-        price: 299000,
-        defaultChecked: true,
-        defaultLiked: true,
-      },
-      {
-        id: 4,
-        title: "NUPHY [Magnetic Jade] Field75 HE 자석축 기계식 키보드 래피드 트리거",
-        imageSrc: "/noimg.png",
-        price: 299000,
-        defaultChecked: false,
-        defaultLiked: true,
-      },
-      {
-        id: 5,
-        title: "NUPHY [Magnetic Jade] Field75 HE 자석축 기계식 키보드 래피드 트리거",
-        imageSrc: "/noimg.png",
-        price: 299000,
-        defaultChecked: false,
-        defaultLiked: true,
-      },
-      {
-        id: 6,
-        title: "NUPHY [Magnetic Jade] Field75 HE 자석축 기계식 키보드 래피드 트리거",
-        imageSrc: "/noimg.png",
-        price: 299000,
-        defaultChecked: true,
-        defaultLiked: true,
-      },
-    ],
-    [],
+interface Sound {
+  sound_id: number;
+  sound_url: string;
+  sound_type: string;
+}
+
+interface SwitchOption {
+  switch_id: number;
+  switch_name: string;
+  switch_type: string;
+  is_default: boolean;
+  sounds: Sound[];
+}
+
+interface LikedProduct {
+  product_id: number;
+  product_name: string;
+  description: string | null;
+  image_url: string | null;
+  switches: SwitchOption[];
+}
+
+interface Props {
+  products: LikedProduct[];
+}
+
+// 상품의 기본 스위치 (없으면 첫 번째 스위치)
+function getDefaultSwitch(product: LikedProduct) {
+  return (
+    product.switches.find((sw) => sw.is_default) ?? product.switches[0] ?? null
   );
+}
 
-  // 비교 모달 목업데이터
-  const compareOptions = useMemo<CompareProduct[]>(
-    () => [
-      {
-        id: 1,
-        title: "NUPHY Field75 HE 마그네틱 화이트축",
-        imageSrc: "/noimg.png",
-        price: 269000,
-        colorName: "스페이스 그레이",
-        colorChips: ["#A9A9A9"],
-        soundLabel: "마그네틱 화이트축 타건음 듣기",
-        features: [
-          "로우&하이 프로파일 교체",
-          "3D 프린팅 오픈소스",
-          "유/무선(2.4G) 블루투스 연결",
-          "커스터마이징(보강판, 키캡, 스위치)",
-          "2,500mAh 배터리 용량",
-          "스마트 노브 커스텀",
-        ],
-      },
-      {
-        id: 2,
-        title: "NUPHY Field75 HE 마그네틱 제이드축",
-        imageSrc: "/noimg.png",
-        price: 269000,
-        colorName: "스페이스 그레이",
-        colorChips: ["#A9A9A9"],
-        soundLabel: "마그네틱 제이드축 타건음 듣기",
-        features: [
-          "로우&하이 프로파일 교체",
-          "3D 프린팅 오픈소스",
-          "유/무선(2.4G) 블루투스 연결",
-          "커스터마이징(보강판, 키캡, 스위치)",
-          "2,500mAh 배터리 용량",
-          "스마트 노브 커스텀",
-        ],
-      },
-      {
-        id: 3,
-        title: "NUPHY AIR75 V2 갈축",
-        price: 269000,
-        colorName: "아이오닉 화이트",
-        colorChips: ["#A9A9A9", "#000000", "#FFFFFF"],
-        imageSrc: "/noimg.png",
-        soundLabel: "갈축 타건음 듣기",
-        features: [
-          "로우&하이 프로파일 교체",
-          "3D 프린팅 오픈소스",
-          "유/무선(2.4G) 블루투스 연결",
-          "커스터마이징(보강판, 키캡, 스위치)",
-          "2,500mAh 배터리 용량",
-          "스마트 노브 커스텀",
-        ],
-      },
-    ],
-    [],
-  );
-
-  const [selectedIds, setSelectedIds] = useState<number[]>([1, 3, 6]);
+export default function FavoriteList({ products }: Props) {
+  const [items, setItems] = useState<LikedProduct[]>(products);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [isToastOpen, setIsToastOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const hasItems = FavoriteListItems.length > 0;
+  useEffect(() => {
+    getCurrentUserId().then(setCurrentUserId);
+  }, []);
+
+  const hasItems = items.length > 0;
+
+  // 비교 모달 셀렉트박스에 노출할 전체 옵션 (찜한 상품의 기본 스위치 기준)
+  const compareOptions = useMemo<CompareProduct[]>(
+    () =>
+      items.map((product) => {
+        const defaultSwitch = getDefaultSwitch(product);
+        const longSound = defaultSwitch?.sounds.find(
+          (s) => s.sound_type === "long",
+        );
+
+        return {
+          id: product.product_id,
+          title: defaultSwitch
+            ? `${product.product_name} (${defaultSwitch.switch_name})`
+            : product.product_name,
+          imageSrc: product.image_url ?? undefined,
+          description: product.description,
+          soundLabel: defaultSwitch
+            ? `${defaultSwitch.switch_name} 타건음 듣기`
+            : "등록된 타건음 없음",
+          soundUrl: longSound?.sound_url,
+        };
+      }),
+    [items],
+  );
 
   const compareItems = useMemo(() => {
-    const matchedItems = compareOptions.filter((item) => selectedIds.includes(item.id));
-    const fallbackItems = compareOptions.filter((item) => !selectedIds.includes(item.id));
+    const matchedItems = compareOptions.filter((item) =>
+      selectedIds.includes(item.id),
+    );
+    const fallbackItems = compareOptions.filter(
+      (item) => !selectedIds.includes(item.id),
+    );
 
     return [...matchedItems, ...fallbackItems].slice(0, 3);
   }, [compareOptions, selectedIds]);
@@ -167,6 +117,19 @@ export default function FavoriteList() {
 
     setSelectedIds((prev) => prev.filter((id) => id !== itemId));
     return true;
+  };
+
+  // 찜목록에서 하트를 다시 눌러 찜 해제 → 목록에서 제거
+  const handleUnlike = async (productId: number) => {
+    if (!currentUserId) return;
+
+    try {
+      await unlikeProductClient(currentUserId, productId);
+      setItems((prev) => prev.filter((item) => item.product_id !== productId));
+      setSelectedIds((prev) => prev.filter((id) => id !== productId));
+    } catch {
+      alert("찜 해제 중 오류가 발생했습니다.");
+    }
   };
 
   const handleOpenCompare = () => {
@@ -202,17 +165,21 @@ export default function FavoriteList() {
 
         {hasItems ? (
           <GridList>
-            {FavoriteListItems.map((item) => (
-              <CardItem key={item.id}>
+            {items.map((item) => (
+              <CardItem key={item.product_id}>
                 <ProductCard
-                  imageSrc={item.imageSrc}
-                  title={item.title}
-                  price={item.price}
+                  imageSrc={item.image_url ?? undefined}
+                  title={item.product_name}
                   showCheck
                   showLike
-                  defaultChecked={item.defaultChecked}
-                  defaultLiked={item.defaultLiked}
-                  onCheckChange={(checked) => handleCheckChange(item.id, checked)}
+                  defaultChecked={false}
+                  defaultLiked
+                  onCheckChange={(checked) =>
+                    handleCheckChange(item.product_id, checked)
+                  }
+                  onLikeChange={(liked) => {
+                    if (!liked) handleUnlike(item.product_id);
+                  }}
                 />
               </CardItem>
             ))}
