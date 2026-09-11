@@ -28,6 +28,7 @@ export type ProductCarouselItem = {
   defaultLiked?: boolean;
   checked?: boolean;
   onCheckChange?: (checked: boolean) => boolean | void;
+  onLikeChange?: (liked: boolean) => void;
 };
 
 type ProductCarouselProps = {
@@ -36,7 +37,10 @@ type ProductCarouselProps = {
 };
 
 // 바텀시트에 들어가는 캐러셀
-export default function ProductCarousel({ title = "추천 상품", items }: ProductCarouselProps) {
+export default function ProductCarousel({
+  title = "추천 상품",
+  items,
+}: ProductCarouselProps) {
   const [carouselRef, carouselApi] = useEmblaCarousel({
     loop: true,
     align: "start",
@@ -77,6 +81,7 @@ export default function ProductCarousel({ title = "추천 상품", items }: Prod
                   defaultLiked={item.defaultLiked}
                   checked={item.checked}
                   onCheckChange={item.onCheckChange}
+                  onLikeChange={item.onLikeChange}
                 />
               </Slide>
             ))}
@@ -84,11 +89,21 @@ export default function ProductCarousel({ title = "추천 상품", items }: Prod
         </Viewport>
       </CarouselOuter>
 
-      <ArrowButton type="button" onClick={scrollPrev} aria-label="이전 상품 보기" side="left">
+      <ArrowButton
+        type="button"
+        onClick={scrollPrev}
+        aria-label="이전 상품 보기"
+        side="left"
+      >
         <ArrowLeftIcon />
       </ArrowButton>
 
-      <ArrowButton type="button" onClick={scrollNext} aria-label="다음 상품 보기" side="right">
+      <ArrowButton
+        type="button"
+        onClick={scrollNext}
+        aria-label="다음 상품 보기"
+        side="right"
+      >
         <ArrowRightIcon />
       </ArrowButton>
 
