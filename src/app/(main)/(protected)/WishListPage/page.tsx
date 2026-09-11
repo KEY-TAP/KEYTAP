@@ -2,6 +2,7 @@
 
 import { Metadata } from "next";
 import FavoriteList from "./_component/FavoriteList";
+import { getLikedProducts } from "@/lib/api/mainProducts";
 
 export const metadata: Metadata = {
   title: "찜목록 - Keytap",
@@ -9,6 +10,8 @@ export const metadata: Metadata = {
   robots: "noindex, nofollow",
 };
 
-export default function WishList() {
-  return <FavoriteList />;
+export default async function WishList() {
+  const products = await getLikedProducts();
+
+  return <FavoriteList products={products} />;
 }

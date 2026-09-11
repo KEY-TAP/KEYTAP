@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { PLAY_ICON, PAUSE_ICON } from "@/common/icons/icons";
 
@@ -8,11 +8,10 @@ import { PLAY_ICON, PAUSE_ICON } from "@/common/icons/icons";
 import { styled } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Modal from "@mui/material/Modal";
-import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
-import theme from "../../../../../theme/theme";
+import Typography from "@mui/material/Typography";
 
 // mui icons
 import CloseIcon from "@mui/icons-material/Close";
@@ -21,12 +20,10 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 export type CompareProduct = {
   id: number;
   title: string;
-  price: number;
   imageSrc?: string;
-  colorName: string;
-  colorChips: string[];
+  description?: string | null;
   soundLabel: string;
-  features: string[];
+  soundUrl?: string;
 };
 
 type CompareModalProps = {
@@ -36,15 +33,60 @@ type CompareModalProps = {
   options: CompareProduct[];
 };
 
-export default function CompareModal({ open, onClose, items, options }: CompareModalProps) {
-  const [selectedIds, setSelectedIds] = useState<number[]>(() => items.map((item) => item.id));
+export default function CompareModal({
+  open,
+  onClose,
+  items,
+  options,
+}: CompareModalProps) {
+  const [selectedIds, setSelectedIds] = useState<number[]>(() =>
+    items.map((item) => item.id),
+  );
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  const audioRefs = useRef<Record<number, HTMLAudioElement>>({});
 
-  const handleTogglePlay = (index: number) => {
-    setPlayingIndex((prev) => (prev === index ? null : index));
+  // 언마운트 시 재생 중인 사운드 정지 (닫힐 때는 handleClose에서 직접 정지)
+  useEffect(() => {
+    return () => {
+      Object.values(audioRefs.current).forEach((audio) => audio.pause());
+    };
+  }, []);
+
+  // 모달을 닫을 때 재생 중이던 사운드도 함께 정지
+  const handleClose = () => {
+    Object.values(audioRefs.current).forEach((audio) => audio.pause());
+    audioRefs.current = {};
+    setPlayingIndex(null);
+    onClose();
+  };
+
+  const handleTogglePlay = (index: number, soundUrl?: string) => {
+    if (!soundUrl) return;
+
+    // 같은 항목을 다시 누르면 정지
+    if (playingIndex === index) {
+      audioRefs.current[index]?.pause();
+      setPlayingIndex(null);
+      return;
+    }
+
+    // 다른 항목이 재생 중이었다면 정지 후 전환
+    if (playingIndex !== null) {
+      audioRefs.current[playingIndex]?.pause();
+    }
+
+    const audio = new Audio(soundUrl);
+    audio.onended = () => setPlayingIndex(null);
+    audioRefs.current[index] = audio;
+    audio.play().catch(() => {});
+    setPlayingIndex(index);
   };
 
   const handleChange = (index: number, value: string) => {
+    // 선택이 바뀌면 재생 중이던 사운드는 정지
+    audioRefs.current[index]?.pause();
+    if (playingIndex === index) setPlayingIndex(null);
+
     const nextIds = [...selectedIds];
     nextIds[index] = Number(value);
     setSelectedIds(nextIds);
@@ -57,16 +99,16 @@ export default function CompareModal({ open, onClose, items, options }: CompareM
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       BackdropProps={{
         sx: {
           backgroundColor: "rgba(0,0,0,0.6)",
         },
       }}
     >
-      <Overlay onClick={onClose}>
+      <Overlay onClick={handleClose}>
         <ModalWrap onClick={(e) => e.stopPropagation()}>
-          <CloseButton type="button" onClick={onClose} aria-label="닫기">
+          <CloseButton type="button" onClick={handleClose} aria-label="닫기">
             <CloseIcon />
           </CloseButton>
 
@@ -78,7 +120,9 @@ export default function CompareModal({ open, onClose, items, options }: CompareM
                     <StyledSelectWrap>
                       <StyledSelect
                         value={selectedIds[index] ?? item.id}
-                        onChange={(event) => handleChange(index, event.target.value as string)}
+                        onChange={(event) =>
+                          handleChange(index, event.target.value as string)
+                        }
                         IconComponent={ExpandMoreIcon}
                         displayEmpty
                       >
@@ -99,21 +143,11 @@ export default function CompareModal({ open, onClose, items, options }: CompareM
                       />
                     </ThumbBox>
 
-                    <ColorArea>
-                      <ColorChipRow>
-                        {item.colorChips.map((chip, chipIndex) => (
-                          <ColorChip
-                            key={`${chip}-${chipIndex}`}
-                            chipcolor={chip}
-                            bordered={chip === `${theme.palette.background.default}` ? 1 : 0}
-                          />
-                        ))}
-                      </ColorChipRow>
-                      <ColorName>{item.colorName}</ColorName>
-                      <PriceText>{item.price.toLocaleString()}원</PriceText>
-                    </ColorArea>
-
-                    <SoundButton type="button" onClick={() => handleTogglePlay(index)}>
+                    <SoundButton
+                      type="button"
+                      disabled={!item.soundUrl}
+                      onClick={() => handleTogglePlay(index, item.soundUrl)}
+                    >
                       <Image
                         src={playingIndex === index ? PAUSE_ICON : PLAY_ICON}
                         alt="play icon"
@@ -123,13 +157,12 @@ export default function CompareModal({ open, onClose, items, options }: CompareM
                       <span>{item.soundLabel}</span>
                     </SoundButton>
 
-                    <DividerLine />
-
-                    <FeatureList>
-                      {item.features.map((feature, featureIndex) => (
-                        <FeatureItem key={`${feature}-${featureIndex}`}>{feature}</FeatureItem>
-                      ))}
-                    </FeatureList>
+                    {item.description && (
+                      <>
+                        <DividerLine />
+                        <DescriptionText>{item.description}</DescriptionText>
+                      </>
+                    )}
                   </CompareColumn>
                 ))}
               </CompareGrid>
@@ -219,7 +252,7 @@ const ContentInner = styled(Box)(({ theme }) => ({
   },
 }));
 
-const CompareGrid = styled(Box)(() => ({
+const CompareGrid = styled(Box)(({ theme }) => ({
   display: "grid",
   gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
   columnGap: "20px",
@@ -313,83 +346,6 @@ const StyledThumbImage = styled(Image)(() => ({
   objectFit: "cover",
 }));
 
-const ColorArea = styled(Box)(({ theme }) => ({
-  paddingTop: "20px",
-  textAlign: "center",
-
-  [theme.breakpoints.down("md")]: {
-    paddingTop: "16px",
-  },
-
-  [theme.breakpoints.down("sm")]: {
-    paddingTop: "12px",
-  },
-}));
-
-const ColorChipRow = styled(Box)(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: "12px",
-
-  [theme.breakpoints.down("md")]: {},
-
-  [theme.breakpoints.down("sm")]: {
-    gap: "8px",
-  },
-}));
-
-const ColorChip = styled("span", {
-  shouldForwardProp: (prop) => prop !== "chipcolor" && prop !== "bordered",
-})<{ chipcolor: string; bordered?: number }>(({ chipcolor, bordered, theme }) => ({
-  display: "inline-block",
-  width: "28px",
-  height: "28px",
-  borderRadius: "100%",
-  backgroundColor: chipcolor,
-  border: bordered ? "1px solid #D9D9D9" : "none",
-
-  [theme.breakpoints.down("md")]: {
-    width: "22px",
-    height: "22px",
-  },
-
-  [theme.breakpoints.down("sm")]: {
-    width: "18px",
-    height: "18px",
-  },
-}));
-
-const ColorName = styled(Typography)(({ theme }) => ({
-  marginTop: "8px",
-  fontSize: "14px",
-  fontWeight: 300,
-  lineHeight: 1.4,
-  color: theme.palette.grey[800],
-
-  [theme.breakpoints.down("md")]: {},
-
-  [theme.breakpoints.down("sm")]: {
-    marginTop: "6px",
-  },
-}));
-
-const PriceText = styled(Typography)(({ theme }) => ({
-  marginTop: "16px",
-  fontSize: "1rem",
-  fontWeight: 700,
-  lineHeight: 1.2,
-  color: theme.palette.grey[800],
-
-  [theme.breakpoints.down("md")]: {
-    marginTop: "12px",
-  },
-
-  [theme.breakpoints.down("sm")]: {
-    marginTop: "8px",
-  },
-}));
-
 const SoundButton = styled("button")(({ theme }) => ({
   marginTop: "28px",
   width: "100%",
@@ -404,6 +360,10 @@ const SoundButton = styled("button")(({ theme }) => ({
   color: theme.palette.text.primary,
   fontSize: "1rem",
   fontWeight: 400,
+  "&:disabled": {
+    color: theme.palette.grey[300],
+    cursor: "not-allowed",
+  },
   "& .MuiSvgIcon-root": {
     fontSize: "28px",
   },
@@ -440,37 +400,20 @@ const DividerLine = styled(Box)(({ theme }) => ({
   },
 }));
 
-const FeatureList = styled(Box)(() => ({
-  marginTop: "32px",
-  textAlign: "center",
-
-  [theme.breakpoints.down("md")]: {
-    marginTop: "26px",
-  },
-
-  [theme.breakpoints.down("sm")]: {
-    marginTop: "22px",
-  },
-}));
-
-const FeatureItem = styled(Typography)(({ theme }) => ({
+const DescriptionText = styled(Typography)(({ theme }) => ({
+  marginTop: "24px",
   fontSize: "1rem",
   fontWeight: 400,
   lineHeight: 1.6,
   color: theme.palette.text.secondary,
-  "& + &": {
-    marginTop: "24px",
-  },
+  textAlign: "center",
+  whiteSpace: "pre-line",
 
   [theme.breakpoints.down("md")]: {
-    "& + &": {
-      marginTop: "20px",
-    },
+    marginTop: "20px",
   },
 
   [theme.breakpoints.down("sm")]: {
-    "& + &": {
-      marginTop: "16px",
-    },
+    marginTop: "16px",
   },
 }));
