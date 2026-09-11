@@ -25,13 +25,11 @@ export async function createProductClient(payload: ProductPayload) {
 }
 
 // 이미지 Storage 업로드 후 DB에 URL 저장
-export async function uploadProductImageClient(file: File, productId: number) {
+export async function uploadProductImageClient(file: File, productId: number, isPrimary: boolean = false) {
   const fileExt = file.name.split(".").pop();
   const filePath = `${productId}/${Date.now()}.${fileExt}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from("product-images")
-    .upload(filePath, file);
+  const { error: uploadError } = await supabase.storage.from("product-images").upload(filePath, file);
 
   if (uploadError) {
     throw new Error(uploadError.message);
@@ -41,10 +39,19 @@ export async function uploadProductImageClient(file: File, productId: number) {
     data: { publicUrl },
   } = supabase.storage.from("product-images").getPublicUrl(filePath);
 
+  // 이번 이미지를 대표 이미지로 지정하는 경우, 기존 대표 이미지는 해제
+  if (isPrimary) {
+    const { error: resetError } = await supabase.from("product_images").update({ is_primary: false }).eq("fk_product_id", productId);
+
+    if (resetError) {
+      throw new Error(resetError.message);
+    }
+  }
+
   const { error: dbError } = await supabase.from("product_images").insert({
     fk_product_id: productId,
     image_url: publicUrl,
-    is_primary: false,
+    is_primary: isPrimary,
   });
 
   if (dbError) {

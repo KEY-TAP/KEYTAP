@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 // mui
 import { styled } from "@mui/material/styles";
@@ -8,104 +8,147 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
+import AlertDialog from "@/app/admin/_common/_components/AlertDialog";
+
+// 최대 이미지 용량 (100KB) - 안내 문구와 동일한 기준
+const MAX_IMAGE_SIZE = 100 * 1024;
 
 interface Props {
   files: File[];
   onChange: (files: File[]) => void;
+  primaryIndex: number | null;
+  onPrimaryChange: (index: number | null) => void;
 }
 
-export default function ImageUpload({ files, onChange }: Props) {
-  // 숨긴 input을 버튼으로 트리거하기 위한 ref
+export default function ImageUpload({
+  files,
+  onChange,
+  primaryIndex,
+  onPrimaryChange,
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [oversizedFileNames, setOversizedFileNames] = useState<string[]>([]);
 
   const handleAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? []);
 
-    onChange([...files, ...selected]);
+    const validFiles = selected.filter((file) => file.size <= MAX_IMAGE_SIZE);
+    const oversizedFiles = selected.filter(
+      (file) => file.size > MAX_IMAGE_SIZE,
+    );
 
-    // 같은 파일 다시 선택 가능하게 초기화
+    if (validFiles.length > 0) {
+      onChange([...files, ...validFiles]);
+    }
+
+    if (oversizedFiles.length > 0) {
+      setOversizedFileNames(oversizedFiles.map((file) => file.name));
+    }
+
     e.target.value = "";
   };
 
   const handleDelete = (index: number) => {
-    // 해당 index만 제외하고 새 배열 반환
     onChange(files.filter((_, i) => i !== index));
+
+    if (primaryIndex === index) {
+      onPrimaryChange(null);
+    } else if (primaryIndex !== null && primaryIndex > index) {
+      onPrimaryChange(primaryIndex - 1);
+    }
+  };
+
+  const handlePrimaryToggle = (index: number) => {
+    onPrimaryChange(primaryIndex === index ? null : index);
   };
 
   return (
-    <ImageUploadWrap>
-      <UploadGuide variant="caption">
-        최대 5개까지 등록할 수 있습니다. <br />
-        체크 하면 대표이미지로 등록 됩니다. / 권장 사이즈 300 × 300 px, 최대 이미지 사이즈 100kb까지
-        가능합니다.
-      </UploadGuide>
+    <>
+      <ImageUploadWrap>
+        <UploadGuide variant="caption">
+          최대 5개까지 등록할 수 있습니다. <br />
+          체크 하면 대표이미지로 등록 됩니다. / 권장 사이즈 300 × 300 px, 최대
+          이미지 사이즈 100kb까지 가능합니다.
+        </UploadGuide>
 
-      <UploadActions>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => inputRef.current?.click()}
-          disabled={files.length >= 5}
-        >
-          사진 추가
-        </Button>
+        <UploadActions>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => inputRef.current?.click()}
+            disabled={files.length >= 5}
+          >
+            사진 추가
+          </Button>
 
-        <Button
-          variant="outlined"
-          size="small"
-          color="error"
-          onClick={() => onChange([])}
-          disabled={files.length === 0}
-        >
-          선택 삭제
-        </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            color="error"
+            onClick={() => {
+              onChange([]);
+              onPrimaryChange(null);
+            }}
+            disabled={files.length === 0}
+          >
+            선택 삭제
+          </Button>
 
-        {/* accept="image/*"로 이미지 파일만 선택 가능 */}
-        <input ref={inputRef} type="file" accept="image/*" multiple hidden onChange={handleAdd} />
-      </UploadActions>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={handleAdd}
+          />
+        </UploadActions>
 
-      {files.length > 0 && (
-        <ImageList>
-          {/* 헤더 행 */}
-          <ImageRow>
-            <CheckboxHeaderCell />
-
-            <ImageHeaderText>미리보기</ImageHeaderText>
-
-            <ImageHeaderText></ImageHeaderText>
-
-            <MainImageHeaderText>대표 이미지</MainImageHeaderText>
-          </ImageRow>
-
-          {files.map((file, index) => (
-            <ImageRow key={index}>
-              {/* 체크박스 클릭 = 해당 이미지 삭제 */}
-              <DeleteCheckbox onChange={() => handleDelete(index)} />
-
-              <PreviewCell>
-                {/*
-                  URL.createObjectURL
-                  = 업로드 전 로컬 미리보기
-                */}
-                <PreviewImage src={URL.createObjectURL(file)} alt={file.name} />
-              </PreviewCell>
-
-              <FileName variant="caption">{file.name}</FileName>
-
-              <MainImageCell>
-                <Checkbox />
-              </MainImageCell>
+        {files.length > 0 && (
+          <ImageList>
+            <ImageRow>
+              <CheckboxHeaderCell />
+              <ImageHeaderText>미리보기</ImageHeaderText>
+              <ImageHeaderText></ImageHeaderText>
+              <MainImageHeaderText>대표 이미지</MainImageHeaderText>
             </ImageRow>
-          ))}
-        </ImageList>
-      )}
-    </ImageUploadWrap>
+
+            {files.map((file, index) => (
+              <ImageRow key={index}>
+                <DeleteCheckbox onChange={() => handleDelete(index)} />
+
+                <PreviewCell>
+                  <PreviewImage
+                    src={URL.createObjectURL(file)}
+                    alt={file.name}
+                  />
+                </PreviewCell>
+
+                <FileName variant="caption">{file.name}</FileName>
+
+                <MainImageCell>
+                  <Checkbox
+                    checked={primaryIndex === index}
+                    onChange={() => handlePrimaryToggle(index)}
+                  />
+                </MainImageCell>
+              </ImageRow>
+            ))}
+          </ImageList>
+        )}
+      </ImageUploadWrap>
+
+      <AlertDialog
+        open={oversizedFileNames.length > 0}
+        title="이미지 등록 실패"
+        message={`다음 이미지가 최대 용량(100KB)을 초과하여 등록되지 않았습니다.\n\n${oversizedFileNames.join("\n")}`}
+        onClose={() => setOversizedFileNames([])}
+      />
+    </>
   );
 }
 
-const ImageUploadWrap = styled(Box)({
-  width: "100%",
-});
+const ImageUploadWrap = styled(Box)({ width: "100%" });
 
 const UploadGuide = styled(Typography)(({ theme }) => ({
   display: "block",
@@ -119,7 +162,6 @@ const UploadActions = styled(Box)({
   alignItems: "center",
   gap: "10px",
   marginBottom: "40px",
-
   "& Button": {
     width: "120px",
     height: "40px",
@@ -130,9 +172,7 @@ const UploadActions = styled(Box)({
   },
 });
 
-const ImageList = styled(Box)({
-  width: "100%",
-});
+const ImageList = styled(Box)({ width: "100%" });
 
 const ImageRow = styled(Box)(({ theme }) => ({
   display: "flex",
@@ -142,16 +182,10 @@ const ImageRow = styled(Box)(({ theme }) => ({
   borderBottom: "none",
   fontSize: "1rem",
   color: theme.palette.grey[500],
-
-  "&:first-child": {
-    borderBottom: `1px solid ${theme.palette.divider}`,
-  },
+  "&:first-child": { borderBottom: `1px solid ${theme.palette.divider}` },
 }));
 
-const CheckboxHeaderCell = styled(Box)({
-  flexShrink: 0,
-  width: "32px",
-});
+const CheckboxHeaderCell = styled(Box)({ flexShrink: 0, width: "32px" });
 
 const ImageHeaderText = styled(Typography)(({ theme }) => ({
   flex: 1,
@@ -165,16 +199,9 @@ const MainImageHeaderText = styled(Typography)(({ theme }) => ({
   textAlign: "center",
 }));
 
-const DeleteCheckbox = styled(Checkbox)({
-  flexShrink: 0,
-  width: "32px",
-});
+const DeleteCheckbox = styled(Checkbox)({ flexShrink: 0, width: "32px" });
 
-const PreviewCell = styled(Box)({
-  flex: 1,
-
-  padding: "28px 14px 14px 0",
-});
+const PreviewCell = styled(Box)({ flex: 1, padding: "28px 14px 14px 0" });
 
 const PreviewImage = styled("img")(({ theme }) => ({
   display: "block",

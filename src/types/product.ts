@@ -26,6 +26,7 @@ export interface EditableProduct {
   fk_brand_id: number;
   brands: {
     brand_name: string;
-  } | null;
+  }[] | null;
   product_images: ProductImage[] | null;
+  switch_ids: number[];
 }

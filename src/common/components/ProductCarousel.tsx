@@ -26,6 +26,8 @@ export type ProductCarouselItem = {
   showLike?: boolean;
   defaultChecked?: boolean;
   defaultLiked?: boolean;
+  checked?: boolean;
+  onCheckChange?: (checked: boolean) => boolean | void;
 };
 
 type ProductCarouselProps = {
@@ -73,6 +75,8 @@ export default function ProductCarousel({ title = "추천 상품", items }: Prod
                   showLike={item.showLike}
                   defaultChecked={item.defaultChecked}
                   defaultLiked={item.defaultLiked}
+                  checked={item.checked}
+                  onCheckChange={item.onCheckChange}
                 />
               </Slide>
             ))}
