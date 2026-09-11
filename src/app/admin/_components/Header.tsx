@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type MouseEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { alpha, styled } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -14,6 +15,9 @@ import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDown
 import KeyboardArrowUpOutlinedIcon from "@mui/icons-material/KeyboardArrowUpOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 
+import { useAdminAuth } from "./AdminAuthContext";
+import { supabase } from "@/lib/supabaseClient";
+
 type HeaderProps = {
   title?: ReactNode;
   children?: ReactNode;
@@ -22,20 +26,16 @@ type HeaderProps = {
 };
 
 export default function Header({ title, children, adminName, onLogout }: HeaderProps) {
+  const router = useRouter();
+  const { adminName: contextAdminName } = useAdminAuth();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const isProfileMenuOpen = Boolean(anchorEl);
   const headerTitle = title ?? children;
 
-  /**
-   * 로그인 연동 전:
-   * - adminName을 넘기지 않으면 임시로 "황" 표시
-   *
-   * 로그인 연동 후:
-   * - <Header title="대시보드" adminName={admin.name} onLogout={handleLogout} />
-   * - 이런 식으로 adminName만 넘기면 자동으로 첫 글자가 표시됨
-   */
-  const adminInitial = adminName?.trim() ? Array.from(adminName.trim())[0] : "황";
+  // adminName을 직접 넘기면 그 값을 우선 사용하고, 없으면 admin/layout.tsx에서 조회해 내려준 실제 관리자 이름을 사용
+  const resolvedAdminName = adminName ?? contextAdminName;
+  const adminInitial = resolvedAdminName?.trim() ? Array.from(resolvedAdminName.trim())[0] : "관";
 
   const handleProfileMenuToggle = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl((prev) => (prev ? null : event.currentTarget));
@@ -45,9 +45,22 @@ export default function Header({ title, children, adminName, onLogout }: HeaderP
     setAnchorEl(null);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     handleProfileMenuClose();
-    onLogout?.();
+
+    if (onLogout) {
+      onLogout();
+      return;
+    }
+
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      alert("로그아웃 중 오류가 발생했습니다.");
+      return;
+    }
+
+    router.push("/LoginPage");
   };
 
   return (
