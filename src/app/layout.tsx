@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
-import "./globals.css";
+
 import Providers from "./provider";
+
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 
 const inter = Inter({
   subsets: ["latin"],
