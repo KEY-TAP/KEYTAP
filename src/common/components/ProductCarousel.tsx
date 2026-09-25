@@ -72,7 +72,7 @@ export default function ProductCarousel({
                 <BottomSheetCard
                   imageSrc={item.imageSrc}
                   title={item.title}
-                  price={item.price || 0}
+                  price={item.price}
                   tags={item.tags}
                   switchName={item.switchName}
                   showCheck={item.showCheck}
