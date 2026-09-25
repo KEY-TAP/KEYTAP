@@ -113,9 +113,9 @@ export default function BottomSheetCard({
 
         {displayTags.length > 0 ? (
           <TagText>{displayTags.map((tag) => `#${tag}`).join(" ")}</TagText>
-        ) : (
+        ) : formattedPrice ? (
           <PriceText>{formattedPrice}</PriceText>
-        )}
+        ) : null}
       </InfoArea>
     </CardWrap>
   );
