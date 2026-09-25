@@ -1,6 +1,7 @@
 // footer
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import logoImage from "../../../public/logo.png";
@@ -9,14 +10,21 @@ import instagramIcon from "../../../public/insta_icon.svg";
 import notionIcon from "../../../public/notion_icon.svg";
 
 import { styled } from "@mui/material/styles";
+import AlertDialog from "@/app/admin/_common/_components/AlertDialog";
 
-// 클릭시 이동 방지
-const handleComingSoon = (e: React.MouseEvent<HTMLAnchorElement>) => {
-  e.preventDefault();
-  alert("준비중입니다.");
-};
+const GITHUB_URL = "https://github.com/KEY-TAP/KEYTAP";
+const NOTION_URL =
+  "https://star-celery-934.notion.site/Keytap-3017ec0bf68b80dcbe46ec71807d32b7?source=copy_link";
 
 export default function Footer() {
+  // 인스타그램 계정 준비 전까지 "준비중입니다" 안내 모달만 노출
+  const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
+
+  const handleInstagramClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    setIsComingSoonOpen(true);
+  };
+
   return (
     <FooterWrap>
       <FooterInner>
@@ -46,22 +54,28 @@ export default function Footer() {
         {/* 오른쪽 */}
         <RightWrap>
           <li>
-            <a href="#" onClick={handleComingSoon}>
+            <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
               <Image src={githubIcon} alt="깃허브아이콘" />
             </a>
           </li>
           <li>
-            <a href="#" onClick={handleComingSoon}>
+            <a href={NOTION_URL} target="_blank" rel="noopener noreferrer">
               <Image src={notionIcon} alt="노션아이콘" />
             </a>
           </li>
           <li>
-            <a href="#" onClick={handleComingSoon}>
+            <a href="#" onClick={handleInstagramClick}>
               <Image src={instagramIcon} alt="인스타그램아이콘" />
             </a>
           </li>
         </RightWrap>
       </FooterInner>
+
+      <AlertDialog
+        open={isComingSoonOpen}
+        message="준비중입니다."
+        onClose={() => setIsComingSoonOpen(false)}
+      />
     </FooterWrap>
   );
 }
