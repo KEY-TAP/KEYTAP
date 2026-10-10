@@ -2,17 +2,19 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import BottomSheet from "./BottomSheet";
 import ProductCarousel, {
   type ProductCarouselItem,
 } from "../components/ProductCarousel";
 import { useProductStore } from "@/store/useProductStore";
+import { parseHashtags } from "@/utils/hashtags";
 import {
   getCurrentUserId,
   likeProductClient,
   unlikeProductClient,
+  updateLikedSwitchClient,
 } from "@/lib/api/likesClient";
 
 // mui
@@ -25,6 +27,7 @@ interface Sound {
 }
 
 interface SwitchOption {
+  product_switch_id?: number;
   switch_id: number;
   switch_name: string;
   switch_type: string;
@@ -35,6 +38,7 @@ interface SwitchOption {
 interface MainProduct {
   product_id: number;
   product_name: string;
+  hashtags?: string | null;
   image_url: string | null;
   switches: SwitchOption[];
 }
@@ -51,8 +55,13 @@ export default function MainLayout({
   likedProductIds = [],
 }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
+
+  // 바텀시트는 MainPage에서만 보여줌 (찜목록, 마이페이지 등에선 숨김)
+  const isMainPage = pathname === "/MainPage";
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
-  const { selectedProduct, setSelectedProduct } = useProductStore();
+  const { selectedProduct, selectedSwitchId, setSelectedProduct } =
+    useProductStore();
 
   // 찜한 상품 id 목록 (서버에서 로그인 유저 기준으로 미리 받아옴, 클릭 시 로컬에서 갱신)
   const [likedIds, setLikedIds] = useState<Set<number>>(
@@ -63,6 +72,39 @@ export default function MainLayout({
   useEffect(() => {
     getCurrentUserId().then(setCurrentUserId);
   }, []);
+
+  // 이전 선택 상태 (같은 상품 안에서 스위치만 바뀐 건지 구분하려고 저장)
+  const prevSelectionRef = useRef<{
+    productId: number | null;
+    switchId: number | null;
+  }>({ productId: null, switchId: null });
+
+  // 이미 찜한 상품에서 스위치를 바꾸면 찜한 스위치도 같이 바꿔줌
+  // (상품 자체를 새로 선택한 경우엔 찜 정보를 건드리지 않음)
+  useEffect(() => {
+    const prev = prevSelectionRef.current;
+    const productId = selectedProduct?.product_id ?? null;
+    prevSelectionRef.current = { productId, switchId: selectedSwitchId };
+
+    if (!selectedProduct || !currentUserId) return;
+    if (prev.productId !== productId || prev.switchId === selectedSwitchId) {
+      return;
+    }
+    if (!likedIds.has(productId!)) return;
+
+    const targetSwitch = selectedProduct.switches.find(
+      (sw) => sw.switch_id === selectedSwitchId,
+    );
+    if (!targetSwitch?.product_switch_id) return;
+
+    updateLikedSwitchClient(
+      currentUserId,
+      selectedProduct.product_id,
+      targetSwitch.product_switch_id,
+    ).catch(() => {
+      alert("찜한 스위치 변경 중 오류가 발생했습니다.");
+    });
+  }, [selectedProduct, selectedSwitchId, currentUserId, likedIds]);
 
   const handleToggleBottomSheet = () => {
     setIsBottomSheetOpen((prev) => !prev);
@@ -81,7 +123,17 @@ export default function MainLayout({
 
     try {
       if (liked) {
-        await likeProductClient(currentUserId, product.product_id);
+        // 지금 선택된 상품이면 선택한 스위치(청축 등)로, 아니면 기본 스위치로 찜
+        const targetSwitch =
+          selectedProduct?.product_id === product.product_id
+            ? product.switches.find((sw) => sw.switch_id === selectedSwitchId)
+            : product.switches.find((sw) => sw.is_default);
+
+        await likeProductClient(
+          currentUserId,
+          product.product_id,
+          targetSwitch?.product_switch_id,
+        );
         setLikedIds((prev) => new Set(prev).add(product.product_id));
       } else {
         await unlikeProductClient(currentUserId, product.product_id);
@@ -101,6 +153,8 @@ export default function MainLayout({
     id: product.product_id,
     imageSrc: product.image_url ?? undefined,
     title: product.product_name,
+    // 상품 등록 때 입력한 해시태그를 바텀시트 카드에 노출
+    tags: parseHashtags(product.hashtags),
     showCheck: true,
     showLike: true,
     checked: selectedProduct?.product_id === product.product_id,
@@ -115,14 +169,16 @@ export default function MainLayout({
     <>
       <MainWrap>{children}</MainWrap>
 
-      <BottomSheet
-        open={isBottomSheetOpen}
-        onToggle={handleToggleBottomSheet}
-        onClose={handleCloseBottomSheet}
-        thumbnailSrc={selectedProduct?.image_url}
-      >
-        <ProductCarousel title="NUPHY" items={carouselItems} />
-      </BottomSheet>
+      {isMainPage && (
+        <BottomSheet
+          open={isBottomSheetOpen}
+          onToggle={handleToggleBottomSheet}
+          onClose={handleCloseBottomSheet}
+          thumbnailSrc={selectedProduct?.image_url}
+        >
+          <ProductCarousel title="NUPHY" items={carouselItems} />
+        </BottomSheet>
+      )}
     </>
   );
 }

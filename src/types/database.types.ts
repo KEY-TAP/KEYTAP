@@ -403,18 +403,21 @@ export type Database = {
         Row: {
           created_at: string
           fk_product_id: number
+          fk_product_switch_id: number | null
           fk_user_id: string
           id: number
         }
         Insert: {
           created_at?: string
           fk_product_id: number
+          fk_product_switch_id?: number | null
           fk_user_id: string
           id?: number
         }
         Update: {
           created_at?: string
           fk_product_id?: number
+          fk_product_switch_id?: number | null
           fk_user_id?: string
           id?: number
         }
@@ -425,6 +428,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "user_product_likes_fk_product_switch_id_fkey"
+            columns: ["fk_product_switch_id"]
+            isOneToOne: false
+            referencedRelation: "product_switches"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "user_product_likes_fk_user_id_fkey"
