@@ -18,6 +18,11 @@ import { useTheme } from "@mui/material/styles";
 // utils
 import { KEYBOARD_ROWS } from "@/utils/keyRow";
 import { recordPlayClient } from "@/lib/api/playsClient";
+import {
+  playKeySound,
+  preloadKeySound,
+  unlockKeySound,
+} from "@/utils/keySound";
 import { KeyItem } from "@/types/keyboard.type";
 
 interface Sound {
@@ -93,10 +98,22 @@ export default function MainComponent({ products }: Props) {
     );
     if (!singleSound) return;
 
-    // 새 Audio 객체 생성해서 즉시 재생 (연타 가능)
+    // 미리 받아둔 소리가 있으면 바로 재생 (모바일에서도 지연 없이 연타 가능)
+    if (playKeySound(singleSound.sound_url)) return;
+
+    // 아직 로드 전이거나 Web Audio를 못 쓰는 환경이면 기존 방식으로 재생
+    preloadKeySound(singleSound.sound_url);
     const audio = new Audio(singleSound.sound_url);
     audio.play().catch(() => {});
   };
+
+  // 선택한 제품의 모든 스위치 타건음을 미리 받아둠 (스위치를 바꿔도 바로 소리 나게)
+  useEffect(() => {
+    selectedProduct?.switches.forEach((sw) => {
+      const singleSound = sw.sounds.find((s) => s.sound_type === "single");
+      if (singleSound) preloadKeySound(singleSound.sound_url);
+    });
+  }, [selectedProduct]);
 
   // long 사운드 재생/정지 (플레이 버튼)
   // isPlayingRef로 체크해야 클로저 문제 없이 정확한 상태 확인 가능
@@ -223,6 +240,7 @@ export default function MainComponent({ products }: Props) {
   });
 
   const handleVirtualKeyDown = (key: KeyItem) => {
+    unlockKeySound();
     setIsInputFocused(true);
     if (!key.code) return;
     addPressedKey(key.code);
@@ -253,6 +271,7 @@ export default function MainComponent({ products }: Props) {
   };
 
   const handleMobileTouchInput = () => {
+    unlockKeySound(); // 터치할 때 모바일 소리 허용 풀어주기
     mobileInputRef.current?.focus();
   };
 
@@ -265,6 +284,7 @@ export default function MainComponent({ products }: Props) {
   };
 
   const handleDisplayFocus = () => {
+    unlockKeySound();
     setIsInputFocused(true);
     if (isMobile) mobileInputRef.current?.focus();
   };
