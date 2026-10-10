@@ -21,6 +21,15 @@ export async function getProducts() {
       product_images (
         image_url,
         is_primary
+      ),
+      product_switches (
+        id,
+        switches (
+          switch_name
+        ),
+        user_plays (
+          count
+        )
       )
     `,
     )

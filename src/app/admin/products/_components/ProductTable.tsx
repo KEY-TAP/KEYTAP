@@ -21,6 +21,13 @@ interface ProductImage {
   is_primary: boolean;
 }
 
+// 스위치별 재생 기록 개수 (user_plays count 집계 결과)
+interface ProductSwitchPlay {
+  id: number;
+  switches?: { switch_name: string } | { switch_name: string }[] | null;
+  user_plays: { count: number }[] | null;
+}
+
 interface Product {
   product_id: number;
   product_name: string;
@@ -29,17 +36,39 @@ interface Product {
   created_at: string;
   brands: { brand_name: string }[] | null;
   product_images: ProductImage[] | null;
+  product_switches?: ProductSwitchPlay[] | null;
 }
 
 interface Props {
   products: Product[];
 }
 
-const TABLE_COLUMNS = "70px minmax(0, 1fr) 200px 200px 70px";
+const TABLE_COLUMNS = "70px minmax(0, 1fr) 200px 200px 120px 70px";
 
 const getThumbnailUrl = (images: Product["product_images"]) => {
   if (!images || images.length === 0) return null;
   return images.find((img) => img.is_primary)?.image_url ?? images[0].image_url;
+};
+
+// 상품에 연결된 모든 스위치의 재생 횟수를 합산
+const getPlayCount = (switches: Product["product_switches"]) => {
+  if (!switches) return 0;
+  return switches.reduce((total, sw) => total + (sw.user_plays?.[0]?.count ?? 0), 0);
+};
+
+// 스위치별 재생 횟수 (스위치 이름 + 횟수)
+const getSwitchPlayCounts = (switches: Product["product_switches"]) => {
+  if (!switches) return [];
+
+  return switches.map((sw) => {
+    const switchInfo = Array.isArray(sw.switches) ? sw.switches[0] : sw.switches;
+
+    return {
+      id: sw.id,
+      name: switchInfo?.switch_name ?? "-",
+      count: sw.user_plays?.[0]?.count ?? 0,
+    };
+  });
 };
 
 export default function ProductTable({ products }: Props) {
@@ -100,6 +129,7 @@ export default function ProductTable({ products }: Props) {
             <TableHeaderText>상품명</TableHeaderText>
             <TableHeaderText>브랜드</TableHeaderText>
             <TableHeaderText>등록일</TableHeaderText>
+            <TableHeaderText>재생 횟수</TableHeaderText>
             <TableMenuHeader />
           </TableHeader>
 
@@ -120,6 +150,17 @@ export default function ProductTable({ products }: Props) {
               <DataText title={product.brands?.[0]?.brand_name}>{product.brands?.[0]?.brand_name ?? "-"}</DataText>
 
               <DataText>{product.created_at.slice(0, 10)}</DataText>
+
+              <Box>
+                <DataText>{getPlayCount(product.product_switches).toLocaleString()}</DataText>
+
+                {/* 합계 아래에 스위치별 재생 횟수 노출 */}
+                {getSwitchPlayCounts(product.product_switches).map((sw) => (
+                  <SwitchPlayText key={sw.id} title={`${sw.name} ${sw.count.toLocaleString()}`}>
+                    {sw.name} {sw.count.toLocaleString()}
+                  </SwitchPlayText>
+                ))}
+              </Box>
 
               <MenuButtonCell>
                 <ProductMenuButton aria-label={`${product.product_name} 관리 메뉴`} aria-haspopup="menu" aria-controls={selectedId === product.product_id && Boolean(anchorEl) ? "product-action-menu" : undefined} aria-expanded={selectedId === product.product_id && Boolean(anchorEl) ? true : undefined} onClick={(e) => handleMenuOpen(e, product.product_id)}>
@@ -271,6 +312,17 @@ const DataText = styled(Typography)(({ theme }) => ({
   paddingRight: "0.5rem",
   color: theme.palette.text.primary,
   fontSize: "1rem",
+  fontWeight: 400,
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+}));
+
+const SwitchPlayText = styled(Typography)(({ theme }) => ({
+  marginTop: "4px",
+  overflow: "hidden",
+  paddingRight: "0.5rem",
+  color: theme.palette.grey[600],
+  fontSize: "0.875rem",
   fontWeight: 400,
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
