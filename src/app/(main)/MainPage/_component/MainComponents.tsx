@@ -17,6 +17,7 @@ import { useTheme } from "@mui/material/styles";
 
 // utils
 import { KEYBOARD_ROWS } from "@/utils/keyRow";
+import { recordPlayClient } from "@/lib/api/playsClient";
 import { KeyItem } from "@/types/keyboard.type";
 
 interface Sound {
@@ -26,6 +27,7 @@ interface Sound {
 }
 
 interface SwitchOption {
+  product_switch_id?: number; // product_switches.id (재생 기록용)
   switch_id: number;
   switch_name: string;
   switch_type: string;
@@ -116,6 +118,11 @@ export default function MainComponent({ products }: Props) {
       // 재생
       const audio = new Audio(longSound.sound_url);
       audio.play().catch(() => {});
+
+      // 재생 횟수 집계용 기록 (실패해도 재생엔 영향 없게 에러는 무시)
+      if (selectedSwitch.product_switch_id) {
+        recordPlayClient(selectedSwitch.product_switch_id).catch(() => {});
+      }
       // 재생 끝나면 자동으로 정지 상태로 변경
       audio.onended = () => {
         isPlayingRef.current = false;
@@ -253,6 +260,8 @@ export default function MainComponent({ products }: Props) {
     e: React.ChangeEvent<HTMLTextAreaElement>,
   ) => {
     setTypedText(e.target.value);
+    // 모바일은 window keydown이 안 잡혀서 입력값이 바뀔 때 직접 소리 재생해줌
+    playSound();
   };
 
   const handleDisplayFocus = () => {
