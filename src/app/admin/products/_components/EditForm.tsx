@@ -6,8 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   updateProductClient,
   uploadProductImageClient,
-  linkSwitchToProductClient,
-  unlinkSwitchFromProductClient,
+  syncProductSwitchesClient,
 } from "@/lib/api/productsClients";
 import ImageUpload from "./ImageUpload";
 import AlertDialog from "@/app/admin/_common/_components/AlertDialog";
@@ -100,19 +99,8 @@ export default function EditForm({ product, brands, switches }: Props) {
         hashtags: hashtags.trim(),
       });
 
-      await unlinkSwitchFromProductClient(product.product_id);
-      if (selectedSwitchIds.length > 0) {
-        await Promise.allSettled(
-          selectedSwitchIds.map((switchId, index) =>
-            linkSwitchToProductClient(
-              product.product_id,
-              switchId,
-              undefined,
-              index === 0,
-            ),
-          ),
-        );
-      }
+      // 스위치는 전부 지우고 다시 만들지 않고 바뀐 것만 반영 (재생 기록·찜 스위치 유지)
+      await syncProductSwitchesClient(product.product_id, selectedSwitchIds);
 
       if (files.length > 0) {
         const results = await Promise.allSettled(

@@ -7,6 +7,7 @@ interface Sound {
 }
 
 interface SwitchOption {
+  product_switch_id?: number; // product_switches.id (재생 기록용)
   switch_id: number;
   switch_name: string;
   switch_type: string;
@@ -17,6 +18,7 @@ interface SwitchOption {
 interface Product {
   product_id: number;
   product_name: string;
+  hashtags?: string | null;
   image_url: string | null;
   switches: SwitchOption[];
 }

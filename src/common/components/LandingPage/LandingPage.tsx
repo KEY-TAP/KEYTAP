@@ -341,6 +341,9 @@ const ExamText = styled("p")(({ theme }) => ({
   bottom: "20px",
   left: "50%",
   transform: "translateX(-50%)",
+  // 모바일에서 문구가 두 줄로 꺾여도 가운데 정렬되게 폭 고정 + 가운데 정렬
+  width: "90%",
+  textAlign: "center",
   zIndex: 9999,
   fontSize: "1.25rem",
   color: theme.palette.background.paper,
