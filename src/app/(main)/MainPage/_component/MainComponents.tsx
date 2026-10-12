@@ -17,6 +17,12 @@ import { useTheme } from "@mui/material/styles";
 
 // utils
 import { KEYBOARD_ROWS } from "@/utils/keyRow";
+import { recordPlayClient } from "@/lib/api/playsClient";
+import {
+  playKeySound,
+  preloadKeySound,
+  unlockKeySound,
+} from "@/utils/keySound";
 import { KeyItem } from "@/types/keyboard.type";
 
 interface Sound {
@@ -26,6 +32,7 @@ interface Sound {
 }
 
 interface SwitchOption {
+  product_switch_id?: number; // product_switches.id (재생 기록용)
   switch_id: number;
   switch_name: string;
   switch_type: string;
@@ -48,6 +55,7 @@ export default function MainComponent({ products }: Props) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const mobileInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const desktopInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set());
   const [typedText, setTypedText] = useState("");
@@ -91,10 +99,22 @@ export default function MainComponent({ products }: Props) {
     );
     if (!singleSound) return;
 
-    // 새 Audio 객체 생성해서 즉시 재생 (연타 가능)
+    // 미리 받아둔 소리가 있으면 바로 재생 (모바일에서도 지연 없이 연타 가능)
+    if (playKeySound(singleSound.sound_url)) return;
+
+    // 아직 로드 전이거나 Web Audio를 못 쓰는 환경이면 기존 방식으로 재생
+    preloadKeySound(singleSound.sound_url);
     const audio = new Audio(singleSound.sound_url);
     audio.play().catch(() => {});
   };
+
+  // 선택한 제품의 모든 스위치 타건음을 미리 받아둠 (스위치를 바꿔도 바로 소리 나게)
+  useEffect(() => {
+    selectedProduct?.switches.forEach((sw) => {
+      const singleSound = sw.sounds.find((s) => s.sound_type === "single");
+      if (singleSound) preloadKeySound(singleSound.sound_url);
+    });
+  }, [selectedProduct]);
 
   // long 사운드 재생/정지 (플레이 버튼)
   // isPlayingRef로 체크해야 클로저 문제 없이 정확한 상태 확인 가능
@@ -116,6 +136,11 @@ export default function MainComponent({ products }: Props) {
       // 재생
       const audio = new Audio(longSound.sound_url);
       audio.play().catch(() => {});
+
+      // 재생 횟수 집계용 기록 (실패해도 재생엔 영향 없게 에러는 무시)
+      if (selectedSwitch.product_switch_id) {
+        recordPlayClient(selectedSwitch.product_switch_id).catch(() => {});
+      }
       // 재생 끝나면 자동으로 정지 상태로 변경
       audio.onended = () => {
         isPlayingRef.current = false;
@@ -173,32 +198,58 @@ export default function MainComponent({ products }: Props) {
     });
   };
 
+  // 탭 문자는 textarea 기본 동작이 포커스 이동이라 직접 넣어줌 (기존처럼 탭 입력 유지)
+  const insertTab = (input: HTMLTextAreaElement) => {
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    setTypedText((prev) => `${prev.slice(0, start)}\t${prev.slice(end)}`);
+    requestAnimationFrame(() => {
+      input.selectionStart = input.selectionEnd = start + 1;
+    });
+  };
+
+  // 데스크톱: 글자 입력/삭제/한글 조합/선택은 textarea가 알아서 처리하고,
+  // 여기선 타건음, 키보드 하이라이트, 포커스 이동, 전체 선택만 처리함
   const handlePressKeyDown = (e: KeyboardEvent) => {
     addPressedKey(e.code);
-    playSound();
 
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.repeat) return;
+    // 키를 꾹 눌러서 반복될 땐 소리 안 내고 처음 눌렀을 때만 재생 (실제 키보드처럼)
+    if (!e.repeat) playSound();
 
-    if (e.key === "Backspace") {
-      setTypedText((prev) => prev.slice(0, -1));
+    const input = desktopInputRef.current;
+    if (!input) return;
+
+    // 다른 입력창에서 치는 건 건드리지 않음
+    const target = e.target as HTMLElement | null;
+    const isOtherField =
+      !!target &&
+      target !== input &&
+      (target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
+        target.isContentEditable);
+    if (isOtherField) return;
+
+    // Cmd/Ctrl + A: 페이지 전체가 아니라 입력한 텍스트만 선택
+    if ((e.metaKey || e.ctrlKey) && e.code === "KeyA") {
+      e.preventDefault();
+      input.focus();
+      input.select();
       return;
     }
-    if (e.key === "Enter") {
-      setTypedText((prev) => `${prev}\n`);
-      return;
-    }
+
     if (e.key === "Tab") {
       e.preventDefault();
-      setTypedText((prev) => `${prev}\t`);
+      input.focus();
+      insertTab(input);
       return;
     }
-    if (e.key === " ") {
-      e.preventDefault();
-      setTypedText((prev) => `${prev} `);
-      return;
-    }
-    if (e.key.length === 1) setTypedText((prev) => prev + e.key);
+
+    // 그 외 단축키(복사/붙여넣기 등)는 브라우저 기본 동작에 맡김
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    // 입력창 밖에 포커스가 있어도 바로 입력되게 포커스를 옮겨줌
+    if (target !== input) input.focus();
   };
 
   const handlePressKeyUp = (e: KeyboardEvent) => {
@@ -216,6 +267,7 @@ export default function MainComponent({ products }: Props) {
   });
 
   const handleVirtualKeyDown = (key: KeyItem) => {
+    unlockKeySound();
     setIsInputFocused(true);
     if (!key.code) return;
     addPressedKey(key.code);
@@ -245,7 +297,22 @@ export default function MainComponent({ products }: Props) {
     removePressedKey(key.code);
   };
 
+  // 입력한 만큼 박스가 같이 늘어나도록 textarea 높이 자동 조절
+  useEffect(() => {
+    const input = desktopInputRef.current;
+    if (!input) return;
+    input.style.height = "auto";
+    input.style.height = `${input.scrollHeight}px`;
+  }, [typedText, isMobile]);
+
+  const handleDesktopInputChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement>,
+  ) => {
+    setTypedText(e.target.value);
+  };
+
   const handleMobileTouchInput = () => {
+    unlockKeySound(); // 터치할 때 모바일 소리 허용 풀어주기
     mobileInputRef.current?.focus();
   };
 
@@ -253,11 +320,15 @@ export default function MainComponent({ products }: Props) {
     e: React.ChangeEvent<HTMLTextAreaElement>,
   ) => {
     setTypedText(e.target.value);
+    // 모바일은 window keydown이 안 잡혀서 입력값이 바뀔 때 직접 소리 재생해줌
+    playSound();
   };
 
   const handleDisplayFocus = () => {
+    unlockKeySound();
     setIsInputFocused(true);
     if (isMobile) mobileInputRef.current?.focus();
+    else desktopInputRef.current?.focus();
   };
 
   return (
@@ -286,10 +357,25 @@ export default function MainComponent({ products }: Props) {
         </TopRow>
 
         <DisplayBox onClick={handleDisplayFocus}>
-          <DisplayText hasValue={!!typedText}>
-            {typedText || "입력한 영문 텍스트가 이곳에 표시 됩니다"}
-            {isInputFocused && <FakeCaret />}
-          </DisplayText>
+          {isMobile ? (
+            <DisplayText hasValue={!!typedText}>
+              {typedText || "입력한 영문 텍스트가 이곳에 표시 됩니다"}
+              {isInputFocused && <FakeCaret />}
+            </DisplayText>
+          ) : (
+            <DisplayTextarea
+              ref={desktopInputRef}
+              value={typedText}
+              onChange={handleDesktopInputChange}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => setIsInputFocused(false)}
+              placeholder="입력한 영문 텍스트가 이곳에 표시 됩니다"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+            />
+          )}
         </DisplayBox>
 
         {isMobile ? (
@@ -474,6 +560,31 @@ const DisplayText = styled("pre", {
   fontSize: "1.125rem",
   lineHeight: 1.55,
   color: hasValue ? theme.palette.text.primary : theme.palette.grey[300],
+}));
+
+// 데스크톱 입력창: 기존 DisplayText와 같은 글자 모양으로 맞춘 진짜 textarea
+const DisplayTextarea = styled("textarea")(({ theme }) => ({
+  display: "block",
+  width: "100%",
+  minHeight: "170px",
+  margin: 0,
+  padding: 0,
+  border: "none",
+  outline: "none",
+  resize: "none",
+  overflow: "hidden",
+  background: "transparent",
+  whiteSpace: "pre-wrap",
+  wordBreak: "break-all",
+  fontFamily: "inherit",
+  fontSize: "1.125rem",
+  lineHeight: 1.55,
+  color: theme.palette.text.primary,
+  caretColor: theme.palette.text.primary,
+  "&::placeholder": {
+    color: theme.palette.grey[300],
+    opacity: 1,
+  },
 }));
 
 const FakeCaret = styled("span")(({ theme }) => ({

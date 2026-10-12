@@ -128,7 +128,8 @@ const KeyboardIcon = styled(Box, {
   alignItems: "center",
   justifyContent: "center",
   color: theme.palette.common.black,
-  transform: open ? "rotate(180deg)" : "rotate(0deg)",
+  // 시트가 내려가 있을 땐 ▲(올리기), 올라와 있을 땐 ▼(내리기)
+  transform: open ? "rotate(0deg)" : "rotate(180deg)",
   transition: "transform .3s ease",
 
   "& svg": {

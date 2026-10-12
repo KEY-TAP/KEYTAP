@@ -81,7 +81,7 @@ export default function Header() {
         <HeaderInner disableGutters>
           {/* 로고 */}
           <LogoWrap>
-            <Link href="/" style={{ display: "flex", alignItems: "center" }}>
+            <Link href="/MainPage" style={{ display: "flex", alignItems: "center" }}>
               <Image src={logoImage} alt="KEY-TAP 로고" />
             </Link>
           </LogoWrap>

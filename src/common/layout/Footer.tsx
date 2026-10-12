@@ -32,7 +32,7 @@ export default function Footer() {
 
         <LeftWrap>
           {/* 로고 */}
-          <Link href="/" style={{ display: "flex", alignItems: "center" }}>
+          <Link href="/MainPage" style={{ display: "flex", alignItems: "center" }}>
             <Image src={logoImage} alt="KEY-TAP 로고" />
           </Link>
 

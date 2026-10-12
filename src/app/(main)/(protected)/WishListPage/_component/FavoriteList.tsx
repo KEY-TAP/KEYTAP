@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 // mui
 import { styled } from "@mui/material/styles";
@@ -24,6 +25,7 @@ interface Sound {
 }
 
 interface SwitchOption {
+  product_switch_id?: number;
   switch_id: number;
   switch_name: string;
   switch_type: string;
@@ -37,20 +39,27 @@ interface LikedProduct {
   description: string | null;
   image_url: string | null;
   switches: SwitchOption[];
+  liked_product_switch_id?: number | null;
 }
 
 interface Props {
   products: LikedProduct[];
 }
 
-// 상품의 기본 스위치 (없으면 첫 번째 스위치)
-function getDefaultSwitch(product: LikedProduct) {
+// 찜할 때 선택한 스위치 (없으면 기본 스위치, 그것도 없으면 첫 번째 스위치)
+function getLikedSwitch(product: LikedProduct) {
   return (
-    product.switches.find((sw) => sw.is_default) ?? product.switches[0] ?? null
+    product.switches.find(
+      (sw) => sw.product_switch_id === product.liked_product_switch_id,
+    ) ??
+    product.switches.find((sw) => sw.is_default) ??
+    product.switches[0] ??
+    null
   );
 }
 
 export default function FavoriteList({ products }: Props) {
+  const router = useRouter();
   const [items, setItems] = useState<LikedProduct[]>(products);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
@@ -63,24 +72,24 @@ export default function FavoriteList({ products }: Props) {
 
   const hasItems = items.length > 0;
 
-  // 비교 모달 셀렉트박스에 노출할 전체 옵션 (찜한 상품의 기본 스위치 기준)
+  // 비교 모달 셀렉트박스에 노출할 전체 옵션 (찜할 때 선택한 스위치 기준)
   const compareOptions = useMemo<CompareProduct[]>(
     () =>
       items.map((product) => {
-        const defaultSwitch = getDefaultSwitch(product);
-        const longSound = defaultSwitch?.sounds.find(
+        const likedSwitch = getLikedSwitch(product);
+        const longSound = likedSwitch?.sounds.find(
           (s) => s.sound_type === "long",
         );
 
         return {
           id: product.product_id,
-          title: defaultSwitch
-            ? `${product.product_name} (${defaultSwitch.switch_name})`
+          title: likedSwitch
+            ? `${product.product_name} (${likedSwitch.switch_name})`
             : product.product_name,
           imageSrc: product.image_url ?? undefined,
           description: product.description,
-          soundLabel: defaultSwitch
-            ? `${defaultSwitch.switch_name} 타건음 듣기`
+          soundLabel: likedSwitch
+            ? `${likedSwitch.switch_name} 타건음 듣기`
             : "등록된 타건음 없음",
           soundUrl: longSound?.sound_url,
         };
@@ -153,14 +162,26 @@ export default function FavoriteList({ products }: Props) {
             <TitleText variant="h2">찜 목록</TitleText>
           </TitleWrap>
 
-          <CompareButton
-            type="button"
-            variant="contained"
-            disableElevation
-            onClick={handleOpenCompare}
-          >
-            한 눈에 비교하기
-          </CompareButton>
+          <ButtonRow>
+            {/* 찜목록에서 메인페이지로 돌아가는 버튼 */}
+            <CompareButton
+              type="button"
+              variant="contained"
+              disableElevation
+              onClick={() => router.push("/MainPage")}
+            >
+              메인으로
+            </CompareButton>
+
+            <CompareButton
+              type="button"
+              variant="contained"
+              disableElevation
+              onClick={handleOpenCompare}
+            >
+              한 눈에 비교하기
+            </CompareButton>
+          </ButtonRow>
         </TopBar>
 
         {hasItems ? (
@@ -307,6 +328,26 @@ const CompareButton = styled(Button)(({ theme }) => ({
 
   [theme.breakpoints.down("sm")]: {
     marginLeft: "auto",
+  },
+}));
+
+// 상단 버튼들 (메인으로 / 한 눈에 비교하기)
+const ButtonRow = styled(Box)(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+
+  [theme.breakpoints.down("sm")]: {
+    width: "100%",
+    gap: "8px",
+
+    // 모바일에선 두 버튼을 같은 너비로 나눠서 좁은 화면에서도 안 넘치게
+    "& > button": {
+      flex: 1,
+      minWidth: 0,
+      marginLeft: 0,
+      padding: "0 12px",
+    },
   },
 }));
 

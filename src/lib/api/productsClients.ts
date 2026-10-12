@@ -80,6 +80,45 @@ export async function unlinkSwitchFromProductClient(productId: number) {
   if (error) throw new Error(error.message);
 }
 
+// 상품-스위치 연결 동기화 (수정 시 사용)
+// 전부 지우고 다시 만들면 product_switches.id가 바뀌어서 재생 기록(cascade 삭제)이랑
+// 찜한 스위치 정보가 날아가니까, 빠진 스위치만 지우고 새로 생긴 스위치만 추가해줌
+export async function syncProductSwitchesClient(productId: number, switchIds: number[]) {
+  const { data: existing, error: selectError } = await supabase.from("product_switches").select("id, fk_switch_id").eq("fk_product_id", productId);
+
+  if (selectError) throw new Error(selectError.message);
+
+  const existingRows = existing ?? [];
+
+  // 체크 해제된 스위치 연결만 삭제
+  const removeIds = existingRows.filter((row) => !switchIds.includes(row.fk_switch_id)).map((row) => row.id);
+
+  if (removeIds.length > 0) {
+    const { error } = await supabase.from("product_switches").delete().in("id", removeIds);
+    if (error) throw new Error(error.message);
+  }
+
+  // 새로 체크된 스위치만 추가
+  const existingSwitchIds = existingRows.map((row) => row.fk_switch_id);
+  const addRows = switchIds
+    .filter((switchId) => !existingSwitchIds.includes(switchId))
+    .map((switchId) => ({ fk_product_id: productId, fk_switch_id: switchId, option_name: null, is_default: false }));
+
+  if (addRows.length > 0) {
+    const { error } = await supabase.from("product_switches").insert(addRows);
+    if (error) throw new Error(error.message);
+  }
+
+  // 기본 스위치는 기존처럼 체크한 순서의 첫 번째로 맞춰줌
+  if (switchIds.length > 0) {
+    const { error: resetError } = await supabase.from("product_switches").update({ is_default: false }).eq("fk_product_id", productId);
+    if (resetError) throw new Error(resetError.message);
+
+    const { error: defaultError } = await supabase.from("product_switches").update({ is_default: true }).eq("fk_product_id", productId).eq("fk_switch_id", switchIds[0]);
+    if (defaultError) throw new Error(defaultError.message);
+  }
+}
+
 // 상품 수정
 export async function updateProductClient(productId: number, payload: ProductPayload) {
   const { error } = await supabase.from("products").update(payload).eq("product_id", productId);

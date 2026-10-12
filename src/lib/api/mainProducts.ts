@@ -4,11 +4,13 @@ const PRODUCT_SELECT = `
   product_id,
   product_name,
   description,
+  hashtags,
   product_images (
     image_url,
     is_primary
   ),
   product_switches (
+    id,
     is_default,
     switches (
       switch_id,
@@ -45,6 +47,7 @@ export async function getMainProducts() {
         if (!sw) return null;
 
         return {
+          product_switch_id: ps.id,
           switch_id: sw.switch_id,
           switch_name: sw.switch_name,
           switch_type: sw.switch_type,
@@ -58,6 +61,7 @@ export async function getMainProducts() {
       product_id: product.product_id,
       product_name: product.product_name,
       description: product.description,
+      hashtags: product.hashtags ?? null,
       image_url: primaryImage?.image_url ?? null,
       switches,
     };
@@ -79,6 +83,7 @@ export async function getLikedProducts() {
     .select(
       `
       created_at,
+      fk_product_switch_id,
       products (
         ${PRODUCT_SELECT}
       )
@@ -106,6 +111,7 @@ export async function getLikedProducts() {
           if (!sw) return null;
 
           return {
+            product_switch_id: ps.id,
             switch_id: sw.switch_id,
             switch_name: sw.switch_name,
             switch_type: sw.switch_type,
@@ -119,8 +125,11 @@ export async function getLikedProducts() {
         product_id: product.product_id,
         product_name: product.product_name,
         description: product.description,
+        hashtags: product.hashtags ?? null,
         image_url: primaryImage?.image_url ?? null,
         switches,
+        // 찜할 때 선택했던 스위치 (옛날 데이터는 null → 기본 스위치로 대체)
+        liked_product_switch_id: row.fk_product_switch_id ?? null,
       };
     })
     .filter(
