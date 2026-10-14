@@ -376,9 +376,21 @@ export default function MainComponent({ products }: Props) {
 
         {/* 선택된 제품명 + 플레이 버튼 */}
         <AudioSection>
-          <AudioButton type="button" onClick={toggleLongSound}>
+          <AudioButton
+            type="button"
+            onClick={toggleLongSound}
+            playing={isPlaying ? 1 : 0}
+          >
             {isPlaying ? <Image src={PAUSE_ICON} alt="pause icon" width={28} height={28} /> : <Image src={PLAY_ICON} alt="play icon" width={28} height={28} />}
             <AudioTitle>{selectedProduct?.product_name ?? "모델을 선택해주세요"}</AudioTitle>
+            {isPlaying && (
+              <PlayingBars aria-hidden="true">
+                <span />
+                <span />
+                <span />
+                <span />
+              </PlayingBars>
+            )}
           </AudioButton>
 
           {selectedProduct && selectedProduct.switches.length > 1 && (
@@ -620,17 +632,63 @@ const AudioSection = styled(Box)(() => ({
   marginTop: "6px",
 }));
 
-const AudioButton = styled("button")(({ theme }) => ({
+const AudioButton = styled("button", {
+  shouldForwardProp: (prop) => prop !== "playing",
+})<{ playing?: number }>(({ theme, playing }) => ({
+  position: "relative",
   border: "none",
   background: "transparent",
   display: "inline-flex",
   alignItems: "center",
   gap: "10px",
   cursor: "pointer",
-  color: theme.palette.common.black,
+  // 재생 중엔 제목이 호버할 때와 같은 primary 색으로 유지됨
+  color: playing ? theme.palette.primary.main : theme.palette.common.black,
   transition: "color .2s ease",
   "& svg": { fontSize: "2rem", transition: "color .2s ease" },
-  "&:hover": { color: theme.palette.primary.main },
+  "& img": { transition: "transform .15s ease" },
+  "&:active img": { transform: "scale(0.92)" },
+  "@media (hover: hover)": {
+    "&:hover": { color: theme.palette.primary.main },
+    "&:hover img": { transform: "scale(1.1)" },
+    "&:active img": { transform: "scale(0.92)" },
+  },
+  "@media (prefers-reduced-motion: reduce)": {
+    "& img": { transition: "none" },
+    "&:hover img, &:active img": { transform: "none" },
+  },
+}));
+
+// 재생 중에만 제목 오른쪽에 나타나는 소리 막대 (절대 위치라 제목 위치는 안 밀림)
+const PlayingBars = styled("span")(({ theme }) => ({
+  position: "absolute",
+  top: 0,
+  bottom: 0,
+  left: "100%",
+  marginLeft: "8px",
+  display: "flex",
+  alignItems: "center",
+  gap: "3px",
+  "& span": {
+    display: "block",
+    width: "4px",
+    height: "20px",
+    borderRadius: "2px",
+    background: theme.palette.primary.main,
+    transformOrigin: "center",
+    animation: "playingBar .9s ease-in-out infinite",
+  },
+  "& span:nth-of-type(2)": { animationDelay: ".15s" },
+  "& span:nth-of-type(3)": { animationDelay: ".3s" },
+  "& span:nth-of-type(4)": { animationDelay: ".45s" },
+  "@keyframes playingBar": {
+    "0%, 100%": { transform: "scaleY(0.3)" },
+    "50%": { transform: "scaleY(1)" },
+  },
+  // 모션 줄이기 설정에서는 움직이지 않고 막대 높이만 보여줌
+  "@media (prefers-reduced-motion: reduce)": {
+    "& span": { animation: "none", transform: "scaleY(0.6)" },
+  },
 }));
 
 const AudioTitle = styled(Typography)(() => ({
