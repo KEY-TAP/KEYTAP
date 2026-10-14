@@ -198,6 +198,11 @@ export default function MainComponent({ products }: Props) {
     });
   };
 
+  // 눌린 키 표시를 전부 해제 (keyup이 안 오는 상황 대비)
+  const clearPressedKeys = () => {
+    setPressedKeys((prev) => (prev.size ? new Set() : prev));
+  };
+
   // 탭 문자는 textarea 기본 동작이 포커스 이동이라 직접 넣어줌 (기존처럼 탭 입력 유지)
   const insertTab = (input: HTMLTextAreaElement) => {
     const start = input.selectionStart;
@@ -211,7 +216,8 @@ export default function MainComponent({ products }: Props) {
   // 데스크톱: 글자 입력/삭제/한글 조합/선택은 textarea가 알아서 처리하고,
   // 여기선 타건음, 키보드 하이라이트, 포커스 이동, 전체 선택만 처리함
   const handlePressKeyDown = (e: KeyboardEvent) => {
-    addPressedKey(e.code);
+    // Mac은 Cmd를 누른 채 친 키의 keyup이 오지 않아서, Cmd 조합은 하이라이트하지 않음
+    if (!e.metaKey) addPressedKey(e.code);
 
     // 키를 꾹 눌러서 반복될 땐 소리 안 내고 처음 눌렀을 때만 재생 (실제 키보드처럼)
     if (!e.repeat) playSound();
@@ -253,16 +259,29 @@ export default function MainComponent({ products }: Props) {
   };
 
   const handlePressKeyUp = (e: KeyboardEvent) => {
+    if (e.key === "Meta") {
+      clearPressedKeys();
+      return;
+    }
     removePressedKey(e.code);
   };
 
   useEffect(() => {
     if (isMobile) return;
+    // 키를 누른 채 다른 창/탭으로 가면 keyup이 안 오므로 눌린 키를 초기화
+    const handleVisibilityChange = () => {
+      if (document.hidden) clearPressedKeys();
+    };
+
     window.addEventListener("keydown", handlePressKeyDown);
     window.addEventListener("keyup", handlePressKeyUp);
+    window.addEventListener("blur", clearPressedKeys);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       window.removeEventListener("keydown", handlePressKeyDown);
       window.removeEventListener("keyup", handlePressKeyUp);
+      window.removeEventListener("blur", clearPressedKeys);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   });
 
