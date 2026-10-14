@@ -8,7 +8,7 @@ import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
 import VolumeOffRoundedIcon from "@mui/icons-material/VolumeOffRounded";
 
 // mui
-import { styled } from "@mui/material/styles";
+import { styled, alpha } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
@@ -356,7 +356,10 @@ export default function MainComponent({ products }: Props) {
           </SoundToggleButton>
         </TopRow>
 
-        <DisplayBox onClick={handleDisplayFocus}>
+        <DisplayBox
+          onClick={handleDisplayFocus}
+          focused={isMobile && isInputFocused ? 1 : 0}
+        >
           {isMobile ? (
             <DisplayText hasValue={!!typedText}>
               {typedText || "입력한 영문 텍스트가 이곳에 표시 됩니다"}
@@ -535,20 +538,30 @@ const GuideText = styled(Typography)(({ theme }) => ({
   color: theme.palette.text.primary,
 }));
 
-const DisplayBox = styled(Box)(({ theme }) => ({
-  minHeight: "226px",
-  borderRadius: "14px",
-  background: theme.palette.common.white,
-  boxShadow: "0 6px 24px rgba(0, 0, 0, 0.12)",
-  padding: "28px 40px",
-  marginBottom: "24px",
-  cursor: "text",
-  [theme.breakpoints.down("sm")]: {
-    minHeight: "180px",
-    padding: "22px 20px",
-    marginBottom: "20px",
-  },
-}));
+const DisplayBox = styled(Box, {
+  shouldForwardProp: (prop) => prop !== "focused",
+})<{ focused?: number }>(({ theme, focused }) => {
+  // 입력 중일 때: 테두리처럼 보이는 1px 링 + 살짝 진한 그림자 (box-shadow라 레이아웃이 안 움직임)
+  const focusedShadow = `0 0 0 1px ${theme.palette.primary.main}, 0 8px 28px ${alpha(theme.palette.primary.main, 0.18)}`;
+
+  return {
+    minHeight: "226px",
+    borderRadius: "14px",
+    background: theme.palette.common.white,
+    boxShadow: focused ? focusedShadow : "0 6px 24px rgba(0, 0, 0, 0.12)",
+    padding: "28px 40px",
+    marginBottom: "24px",
+    cursor: "text",
+    transition: "box-shadow .2s ease",
+    "&:focus-within": { boxShadow: focusedShadow },
+    [theme.breakpoints.down("sm")]: {
+      minHeight: "180px",
+      padding: "22px 20px",
+      marginBottom: "20px",
+    },
+    "@media (prefers-reduced-motion: reduce)": { transition: "none" },
+  };
+});
 
 const DisplayText = styled("pre", {
   shouldForwardProp: (prop) => prop !== "hasValue",
@@ -580,7 +593,7 @@ const DisplayTextarea = styled("textarea")(({ theme }) => ({
   fontSize: "1.125rem",
   lineHeight: 1.55,
   color: theme.palette.text.primary,
-  caretColor: theme.palette.text.primary,
+  caretColor: theme.palette.primary.main,
   "&::placeholder": {
     color: theme.palette.grey[300],
     opacity: 1,
@@ -592,7 +605,7 @@ const FakeCaret = styled("span")(({ theme }) => ({
   width: "1px",
   height: "1.1em",
   marginLeft: "2px",
-  background: theme.palette.text.primary,
+  background: theme.palette.primary.main,
   verticalAlign: "text-bottom",
   animation: "blink 1s step-end infinite",
   "@keyframes blink": {
