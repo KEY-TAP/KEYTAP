@@ -735,7 +735,40 @@ const SwitchPickerButton = styled("button", {
   cursor: "pointer",
   transition: "all .2s ease",
 
-  "&:hover": {
-    borderColor: theme.palette.primary.main,
+  // 선택되는 순간 한 번 살짝 튀는 효과 (active가 되면 자동으로 재생됨)
+  animation: active ? "switchPickerPop .2s ease-out" : "none",
+  "@keyframes switchPickerPop": {
+    "0%": { transform: "scale(1)" },
+    "50%": { transform: "scale(1.05)" },
+    "100%": { transform: "scale(1)" },
+  },
+
+  // 호버는 마우스 환경에서만 (모바일에서 눌린 뒤 호버가 남는 문제 방지)
+  "@media (hover: hover)": {
+    "&:hover": {
+      borderColor: theme.palette.primary.main,
+      ...(active
+        ? {}
+        : {
+            backgroundColor: theme.palette.secondary.main,
+            color: theme.palette.primary.main,
+          }),
+    },
+  },
+
+  "&:active": {
+    transform: "scale(0.97)",
+  },
+
+  // 키보드로 이동할 때만 보이는 포커스 표시
+  "&:focus-visible": {
+    outline: `2px solid ${theme.palette.primary.main}`,
+    outlineOffset: "2px",
+  },
+
+  "@media (prefers-reduced-motion: reduce)": {
+    animation: "none",
+    transition: "none",
+    "&:active": { transform: "none" },
   },
 }));
