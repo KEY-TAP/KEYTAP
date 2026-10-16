@@ -8,7 +8,7 @@ import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
 import VolumeOffRoundedIcon from "@mui/icons-material/VolumeOffRounded";
 
 // mui
-import { styled } from "@mui/material/styles";
+import { styled, alpha } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
@@ -18,11 +18,7 @@ import { useTheme } from "@mui/material/styles";
 // utils
 import { KEYBOARD_ROWS } from "@/utils/keyRow";
 import { recordPlayClient } from "@/lib/api/playsClient";
-import {
-  playKeySound,
-  preloadKeySound,
-  unlockKeySound,
-} from "@/utils/keySound";
+import { playKeySound, preloadKeySound, unlockKeySound } from "@/utils/keySound";
 import { KeyItem } from "@/types/keyboard.type";
 
 interface Sound {
@@ -65,18 +61,10 @@ export default function MainComponent({ products }: Props) {
   const [isSoundOn, setIsSoundOn] = useState(true); // 사운드 on/off 토글, 기본값 ON
 
   // 전역 상태에서 선택된 제품 + 스위치 가져오기
-  const {
-    selectedProduct,
-    selectedSwitchId,
-    setSelectedProduct,
-    setSelectedSwitchId,
-  } = useProductStore();
+  const { selectedProduct, selectedSwitchId, setSelectedProduct, setSelectedSwitchId } = useProductStore();
 
   // 선택된 제품 안에서 실제로 사운드를 재생할 스위치
-  const selectedSwitch =
-    selectedProduct?.switches.find((sw) => sw.switch_id === selectedSwitchId) ??
-    selectedProduct?.switches[0] ??
-    null;
+  const selectedSwitch = selectedProduct?.switches.find((sw) => sw.switch_id === selectedSwitchId) ?? selectedProduct?.switches[0] ?? null;
 
   // long 사운드 오디오 객체 (재생/정지 제어용)
   const longAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -94,9 +82,7 @@ export default function MainComponent({ products }: Props) {
   const playSound = () => {
     if (!isSoundOn) return;
     if (!selectedSwitch) return;
-    const singleSound = selectedSwitch.sounds.find(
-      (s) => s.sound_type === "single",
-    );
+    const singleSound = selectedSwitch.sounds.find((s) => s.sound_type === "single");
     if (!singleSound) return;
 
     // 미리 받아둔 소리가 있으면 바로 재생 (모바일에서도 지연 없이 연타 가능)
@@ -121,9 +107,7 @@ export default function MainComponent({ products }: Props) {
   const toggleLongSound = () => {
     if (!isSoundOn) return;
     if (!selectedSwitch) return;
-    const longSound = selectedSwitch.sounds.find(
-      (s) => s.sound_type === "long",
-    );
+    const longSound = selectedSwitch.sounds.find((s) => s.sound_type === "long");
     if (!longSound) return;
 
     if (isPlayingRef.current) {
@@ -198,6 +182,11 @@ export default function MainComponent({ products }: Props) {
     });
   };
 
+  // 눌린 키 표시를 전부 해제 (keyup이 안 오는 상황 대비)
+  const clearPressedKeys = () => {
+    setPressedKeys((prev) => (prev.size ? new Set() : prev));
+  };
+
   // 탭 문자는 textarea 기본 동작이 포커스 이동이라 직접 넣어줌 (기존처럼 탭 입력 유지)
   const insertTab = (input: HTMLTextAreaElement) => {
     const start = input.selectionStart;
@@ -211,7 +200,8 @@ export default function MainComponent({ products }: Props) {
   // 데스크톱: 글자 입력/삭제/한글 조합/선택은 textarea가 알아서 처리하고,
   // 여기선 타건음, 키보드 하이라이트, 포커스 이동, 전체 선택만 처리함
   const handlePressKeyDown = (e: KeyboardEvent) => {
-    addPressedKey(e.code);
+    // Mac은 Cmd를 누른 채 친 키의 keyup이 오지 않아서, Cmd 조합은 하이라이트하지 않음
+    if (!e.metaKey) addPressedKey(e.code);
 
     // 키를 꾹 눌러서 반복될 땐 소리 안 내고 처음 눌렀을 때만 재생 (실제 키보드처럼)
     if (!e.repeat) playSound();
@@ -221,13 +211,7 @@ export default function MainComponent({ products }: Props) {
 
     // 다른 입력창에서 치는 건 건드리지 않음
     const target = e.target as HTMLElement | null;
-    const isOtherField =
-      !!target &&
-      target !== input &&
-      (target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.tagName === "SELECT" ||
-        target.isContentEditable);
+    const isOtherField = !!target && target !== input && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable);
     if (isOtherField) return;
 
     // Cmd/Ctrl + A: 페이지 전체가 아니라 입력한 텍스트만 선택
@@ -253,16 +237,29 @@ export default function MainComponent({ products }: Props) {
   };
 
   const handlePressKeyUp = (e: KeyboardEvent) => {
+    if (e.key === "Meta") {
+      clearPressedKeys();
+      return;
+    }
     removePressedKey(e.code);
   };
 
   useEffect(() => {
     if (isMobile) return;
+    // 키를 누른 채 다른 창/탭으로 가면 keyup이 안 오므로 눌린 키를 초기화
+    const handleVisibilityChange = () => {
+      if (document.hidden) clearPressedKeys();
+    };
+
     window.addEventListener("keydown", handlePressKeyDown);
     window.addEventListener("keyup", handlePressKeyUp);
+    window.addEventListener("blur", clearPressedKeys);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       window.removeEventListener("keydown", handlePressKeyDown);
       window.removeEventListener("keyup", handlePressKeyUp);
+      window.removeEventListener("blur", clearPressedKeys);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   });
 
@@ -305,9 +302,7 @@ export default function MainComponent({ products }: Props) {
     input.style.height = `${input.scrollHeight}px`;
   }, [typedText, isMobile]);
 
-  const handleDesktopInputChange = (
-    e: React.ChangeEvent<HTMLTextAreaElement>,
-  ) => {
+  const handleDesktopInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setTypedText(e.target.value);
   };
 
@@ -316,9 +311,7 @@ export default function MainComponent({ products }: Props) {
     mobileInputRef.current?.focus();
   };
 
-  const handleMobileInputChange = (
-    e: React.ChangeEvent<HTMLTextAreaElement>,
-  ) => {
+  const handleMobileInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setTypedText(e.target.value);
     // 모바일은 window keydown이 안 잡혀서 입력값이 바뀔 때 직접 소리 재생해줌
     playSound();
@@ -340,86 +333,38 @@ export default function MainComponent({ products }: Props) {
             <GuideText>소리를 듣기 위해 영문키를 눌러주세요.</GuideText>
           </GuideRow>
 
-          <SoundToggleButton
-            type="button"
-            active={isSoundOn ? 1 : 0}
-            onClick={handleToggleSound}
-            aria-pressed={isSoundOn}
-            aria-label={isSoundOn ? "사운드 끄기" : "사운드 켜기"}
-          >
-            {isSoundOn ? (
-              <VolumeUpRoundedIcon fontSize="small" />
-            ) : (
-              <VolumeOffRoundedIcon fontSize="small" />
-            )}
+          <SoundToggleButton type="button" active={isSoundOn ? 1 : 0} onClick={handleToggleSound} aria-pressed={isSoundOn} aria-label={isSoundOn ? "사운드 끄기" : "사운드 켜기"}>
+            {isSoundOn ? <VolumeUpRoundedIcon fontSize="small" /> : <VolumeOffRoundedIcon fontSize="small" />}
             <span>{isSoundOn ? "사운드 ON" : "사운드 OFF"}</span>
           </SoundToggleButton>
         </TopRow>
 
-        <DisplayBox onClick={handleDisplayFocus}>
+        <DisplayBox onClick={handleDisplayFocus} focused={isMobile && isInputFocused ? 1 : 0}>
           {isMobile ? (
             <DisplayText hasValue={!!typedText}>
               {typedText || "입력한 영문 텍스트가 이곳에 표시 됩니다"}
               {isInputFocused && <FakeCaret />}
             </DisplayText>
           ) : (
-            <DisplayTextarea
-              ref={desktopInputRef}
-              value={typedText}
-              onChange={handleDesktopInputChange}
-              onFocus={() => setIsInputFocused(true)}
-              onBlur={() => setIsInputFocused(false)}
-              placeholder="입력한 영문 텍스트가 이곳에 표시 됩니다"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck={false}
-            />
+            <DisplayTextarea ref={desktopInputRef} value={typedText} onChange={handleDesktopInputChange} onFocus={() => setIsInputFocused(true)} onBlur={() => setIsInputFocused(false)} placeholder="입력한 영문 텍스트가 이곳에 표시 됩니다" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} />
           )}
         </DisplayBox>
 
         {isMobile ? (
           <MobileInputSection>
-            <MobileTouchButton
-              type="button"
-              variant="outlined"
-              onClick={handleMobileTouchInput}
-            >
+            <MobileTouchButton type="button" variant="outlined" onClick={handleMobileTouchInput}>
               이곳을 터치하여 입력해보세요
             </MobileTouchButton>
-            <HiddenMobileInput
-              ref={mobileInputRef}
-              value={typedText}
-              onChange={handleMobileInputChange}
-              onFocus={() => setIsInputFocused(true)}
-              onBlur={() => setIsInputFocused(false)}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck={false}
-            />
+            <HiddenMobileInput ref={mobileInputRef} value={typedText} onChange={handleMobileInputChange} onFocus={() => setIsInputFocused(true)} onBlur={() => setIsInputFocused(false)} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} />
           </MobileInputSection>
         ) : (
           <KeyboardWrap>
             {KEYBOARD_ROWS.map((row, rowIndex) => (
               <KeyRow key={`row-${rowIndex}`}>
                 {row.map((key, index) => {
-                  const isPressed = key.code
-                    ? pressedKeys.has(key.code)
-                    : false;
+                  const isPressed = key.code ? pressedKeys.has(key.code) : false;
                   return (
-                    <KeyButton
-                      key={`${key.label}-${index}`}
-                      type="button"
-                      active={isPressed ? 1 : 0}
-                      widthRatio={key.width ?? 1}
-                      onMouseDown={() => handleVirtualKeyDown(key)}
-                      onMouseUp={() => handleVirtualKeyUp(key)}
-                      onMouseLeave={() => handleVirtualKeyUp(key)}
-                      onTouchStart={() => handleVirtualKeyDown(key)}
-                      onTouchEnd={() => handleVirtualKeyUp(key)}
-                      onContextMenu={(e) => e.preventDefault()}
-                    >
+                    <KeyButton key={`${key.label}-${index}`} type="button" active={isPressed ? 1 : 0} widthRatio={key.width ?? 1} onMouseDown={() => handleVirtualKeyDown(key)} onMouseUp={() => handleVirtualKeyUp(key)} onMouseLeave={() => handleVirtualKeyUp(key)} onTouchStart={() => handleVirtualKeyDown(key)} onTouchEnd={() => handleVirtualKeyUp(key)} onContextMenu={(e) => e.preventDefault()}>
                       {key.label}
                     </KeyButton>
                   );
@@ -431,35 +376,34 @@ export default function MainComponent({ products }: Props) {
 
         {/* 선택된 제품명 + 플레이 버튼 */}
         <AudioSection>
-          <AudioButton type="button" onClick={toggleLongSound}>
-            {isPlaying ? (
-              <Image src={PAUSE_ICON} alt="pause icon" width={28} height={28} />
-            ) : (
-              <Image src={PLAY_ICON} alt="play icon" width={28} height={28} />
+          <AudioButton
+            type="button"
+            onClick={toggleLongSound}
+            playing={isPlaying ? 1 : 0}
+          >
+            {isPlaying ? <Image src={PAUSE_ICON} alt="pause icon" width={28} height={28} /> : <Image src={PLAY_ICON} alt="play icon" width={28} height={28} />}
+            <AudioTitle>{selectedProduct?.product_name ?? "모델을 선택해주세요"}</AudioTitle>
+            {isPlaying && (
+              <PlayingBars aria-hidden="true">
+                <span />
+                <span />
+                <span />
+                <span />
+              </PlayingBars>
             )}
-            <AudioTitle>
-              {selectedProduct?.product_name ?? "모델을 선택해주세요"}
-            </AudioTitle>
           </AudioButton>
 
           {selectedProduct && selectedProduct.switches.length > 1 && (
             <SwitchPicker>
               {selectedProduct.switches.map((sw) => (
-                <SwitchPickerButton
-                  key={sw.switch_id}
-                  type="button"
-                  active={selectedSwitchId === sw.switch_id ? 1 : 0}
-                  onClick={() => setSelectedSwitchId(sw.switch_id)}
-                >
+                <SwitchPickerButton key={sw.switch_id} type="button" active={selectedSwitchId === sw.switch_id ? 1 : 0} onClick={() => setSelectedSwitchId(sw.switch_id)}>
                   {sw.switch_name}
                 </SwitchPickerButton>
               ))}
             </SwitchPicker>
           )}
 
-          <AudioDescription>
-            미리 녹음된 타건음을 들으실 수 있습니다.
-          </AudioDescription>
+          <AudioDescription>미리 녹음된 타건음을 들으실 수 있습니다.</AudioDescription>
         </AudioSection>
       </Section>
     </Main>
@@ -504,9 +448,7 @@ const SoundToggleButton = styled("button", {
   padding: "0 14px",
   borderRadius: "5px",
   border: `1px solid ${active ? theme.palette.primary.main : theme.palette.divider}`,
-  background: active
-    ? theme.palette.primary.main
-    : theme.palette.background.default,
+  background: active ? theme.palette.primary.main : theme.palette.background.default,
   color: active ? theme.palette.common.white : theme.palette.text.secondary,
   fontSize: "0.875rem",
   fontWeight: 600,
@@ -535,20 +477,30 @@ const GuideText = styled(Typography)(({ theme }) => ({
   color: theme.palette.text.primary,
 }));
 
-const DisplayBox = styled(Box)(({ theme }) => ({
-  minHeight: "226px",
-  borderRadius: "14px",
-  background: theme.palette.common.white,
-  boxShadow: "0 6px 24px rgba(0, 0, 0, 0.12)",
-  padding: "28px 40px",
-  marginBottom: "24px",
-  cursor: "text",
-  [theme.breakpoints.down("sm")]: {
-    minHeight: "180px",
-    padding: "22px 20px",
-    marginBottom: "20px",
-  },
-}));
+const DisplayBox = styled(Box, {
+  shouldForwardProp: (prop) => prop !== "focused",
+})<{ focused?: number }>(({ theme, focused }) => {
+  // 입력 중일 때: 테두리처럼 보이는 1px 링 + 살짝 진한 그림자 (box-shadow라 레이아웃이 안 움직임)
+  const focusedShadow = `0 0 0 1px ${theme.palette.primary.main}, 0 8px 28px ${alpha(theme.palette.primary.main, 0.18)}`;
+
+  return {
+    minHeight: "226px",
+    borderRadius: "14px",
+    background: theme.palette.common.white,
+    boxShadow: focused ? focusedShadow : "0 6px 24px rgba(0, 0, 0, 0.12)",
+    padding: "28px 40px",
+    marginBottom: "24px",
+    cursor: "text",
+    transition: "box-shadow .2s ease",
+    "&:focus-within": { boxShadow: focusedShadow },
+    [theme.breakpoints.down("sm")]: {
+      minHeight: "180px",
+      padding: "22px 20px",
+      marginBottom: "20px",
+    },
+    "@media (prefers-reduced-motion: reduce)": { transition: "none" },
+  };
+});
 
 const DisplayText = styled("pre", {
   shouldForwardProp: (prop) => prop !== "hasValue",
@@ -580,7 +532,7 @@ const DisplayTextarea = styled("textarea")(({ theme }) => ({
   fontSize: "1.125rem",
   lineHeight: 1.55,
   color: theme.palette.text.primary,
-  caretColor: theme.palette.text.primary,
+  caretColor: theme.palette.primary.main,
   "&::placeholder": {
     color: theme.palette.grey[300],
     opacity: 1,
@@ -592,7 +544,7 @@ const FakeCaret = styled("span")(({ theme }) => ({
   width: "1px",
   height: "1.1em",
   marginLeft: "2px",
-  background: theme.palette.text.primary,
+  background: theme.palette.primary.main,
   verticalAlign: "text-bottom",
   animation: "blink 1s step-end infinite",
   "@keyframes blink": {
@@ -620,35 +572,29 @@ const KeyRow = styled(Box)(() => ({
 
 const KeyButton = styled("button", {
   shouldForwardProp: (prop) => prop !== "active" && prop !== "widthRatio",
-})<{ active?: number; widthRatio?: number }>(
-  ({ theme, active, widthRatio }) => ({
-    flex: `${widthRatio ?? 1} 1 0`,
-    minWidth: 0,
-    height: "60px",
-    borderRadius: "11px",
-    border: `1px solid ${active ? "rgba(156, 157, 170, 0.8)" : "#9C9DAA"}`,
-    background: active
-      ? "rgba(173, 179, 255, 0.4)"
-      : theme.palette.common.white,
-    color: theme.palette.text.secondary,
-    fontSize: "1rem",
-    wordBreak: "break-all",
-    fontWeight: 500,
-    boxShadow: active
-      ? "0 2px 4px rgba(0,0,0,0.08)"
-      : "0 4px 8px rgba(0,0,0,0.10)",
-    cursor: "pointer",
-    transition:
-      "transform .12s ease, background-color .12s ease, border-color .12s ease, box-shadow .12s ease",
-    userSelect: "none",
-    transform: active ? "translateY(2px)" : "translateY(0)",
-    "&:active": {
-      transform: "translateY(2px)",
-      background: "rgba(173, 179, 255, 0.4)",
-      borderColor: "rgba(156, 157, 170, 0.8)",
-    },
-  }),
-);
+})<{ active?: number; widthRatio?: number }>(({ theme, active, widthRatio }) => ({
+  flex: `${widthRatio ?? 1} 1 0`,
+  minWidth: 0,
+  height: "60px",
+  borderRadius: "11px",
+  border: `1px solid ${active ? "rgba(156, 157, 170, 0.8)" : "#9C9DAA"}`,
+  background: active ? "rgba(173, 179, 255, 0.4)" : theme.palette.common.white,
+  color: theme.palette.text.secondary,
+  fontSize: "1rem",
+  wordBreak: "break-all",
+  fontWeight: 500,
+  boxShadow: active ? "0 2px 4px rgba(0,0,0,0.08)" : "0 4px 8px rgba(0,0,0,0.10)",
+  cursor: "pointer",
+  // 누를 땐 빠르게, 뗄 땐 눌림 색이 서서히 사라지게 해서 방금 친 키의 잔상이 남음
+  transition: active ? "transform .12s ease, background-color .12s ease, border-color .12s ease, box-shadow .12s ease" : "transform .12s ease, background-color .5s ease, border-color .5s ease, box-shadow .5s ease",
+  userSelect: "none",
+  transform: active ? "translateY(2px)" : "translateY(0)",
+  "&:active": {
+    transform: "translateY(2px)",
+    background: "rgba(173, 179, 255, 0.4)",
+    borderColor: "rgba(156, 157, 170, 0.8)",
+  },
+}));
 
 const MobileInputSection = styled(Box)(() => ({ marginBottom: "28px" }));
 
@@ -686,17 +632,63 @@ const AudioSection = styled(Box)(() => ({
   marginTop: "6px",
 }));
 
-const AudioButton = styled("button")(({ theme }) => ({
+const AudioButton = styled("button", {
+  shouldForwardProp: (prop) => prop !== "playing",
+})<{ playing?: number }>(({ theme, playing }) => ({
+  position: "relative",
   border: "none",
   background: "transparent",
   display: "inline-flex",
   alignItems: "center",
   gap: "10px",
   cursor: "pointer",
-  color: theme.palette.common.black,
+  // 재생 중엔 제목이 호버할 때와 같은 primary 색으로 유지됨
+  color: playing ? theme.palette.primary.main : theme.palette.common.black,
   transition: "color .2s ease",
   "& svg": { fontSize: "2rem", transition: "color .2s ease" },
-  "&:hover": { color: theme.palette.primary.main },
+  "& img": { transition: "transform .15s ease" },
+  "&:active img": { transform: "scale(0.92)" },
+  "@media (hover: hover)": {
+    "&:hover": { color: theme.palette.primary.main },
+    "&:hover img": { transform: "scale(1.1)" },
+    "&:active img": { transform: "scale(0.92)" },
+  },
+  "@media (prefers-reduced-motion: reduce)": {
+    "& img": { transition: "none" },
+    "&:hover img, &:active img": { transform: "none" },
+  },
+}));
+
+// 재생 중에만 제목 오른쪽에 나타나는 소리 막대 (절대 위치라 제목 위치는 안 밀림)
+const PlayingBars = styled("span")(({ theme }) => ({
+  position: "absolute",
+  top: 0,
+  bottom: 0,
+  left: "100%",
+  marginLeft: "8px",
+  display: "flex",
+  alignItems: "center",
+  gap: "3px",
+  "& span": {
+    display: "block",
+    width: "4px",
+    height: "20px",
+    borderRadius: "2px",
+    background: theme.palette.primary.main,
+    transformOrigin: "center",
+    animation: "playingBar .9s ease-in-out infinite",
+  },
+  "& span:nth-of-type(2)": { animationDelay: ".15s" },
+  "& span:nth-of-type(3)": { animationDelay: ".3s" },
+  "& span:nth-of-type(4)": { animationDelay: ".45s" },
+  "@keyframes playingBar": {
+    "0%, 100%": { transform: "scaleY(0.3)" },
+    "50%": { transform: "scaleY(1)" },
+  },
+  // 모션 줄이기 설정에서는 움직이지 않고 막대 높이만 보여줌
+  "@media (prefers-reduced-motion: reduce)": {
+    "& span": { animation: "none", transform: "scaleY(0.6)" },
+  },
 }));
 
 const AudioTitle = styled(Typography)(() => ({
@@ -729,13 +721,44 @@ const SwitchPickerButton = styled("button", {
   fontSize: "0.9rem",
   fontWeight: active ? 700 : 400,
   color: active ? theme.palette.common.white : theme.palette.text.primary,
-  backgroundColor: active
-    ? theme.palette.primary.main
-    : theme.palette.background.default,
+  backgroundColor: active ? theme.palette.primary.main : theme.palette.background.default,
   cursor: "pointer",
   transition: "all .2s ease",
 
-  "&:hover": {
-    borderColor: theme.palette.primary.main,
+  // 선택되는 순간 한 번 살짝 튀는 효과 (active가 되면 자동으로 재생됨)
+  animation: active ? "switchPickerPop .2s ease-out" : "none",
+  "@keyframes switchPickerPop": {
+    "0%": { transform: "scale(1)" },
+    "50%": { transform: "scale(1.05)" },
+    "100%": { transform: "scale(1)" },
+  },
+
+  // 호버는 마우스 환경에서만 (모바일에서 눌린 뒤 호버가 남는 문제 방지)
+  "@media (hover: hover)": {
+    "&:hover": {
+      borderColor: theme.palette.primary.main,
+      ...(active
+        ? {}
+        : {
+            backgroundColor: theme.palette.secondary.main,
+            color: theme.palette.primary.main,
+          }),
+    },
+  },
+
+  "&:active": {
+    transform: "scale(0.97)",
+  },
+
+  // 키보드로 이동할 때만 보이는 포커스 표시
+  "&:focus-visible": {
+    outline: `2px solid ${theme.palette.primary.main}`,
+    outlineOffset: "2px",
+  },
+
+  "@media (prefers-reduced-motion: reduce)": {
+    animation: "none",
+    transition: "none",
+    "&:active": { transform: "none" },
   },
 }));
