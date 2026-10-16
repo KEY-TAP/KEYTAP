@@ -21,6 +21,10 @@ import { recordPlayClient } from "@/lib/api/playsClient";
 import { playKeySound, preloadKeySound, unlockKeySound } from "@/utils/keySound";
 import { KeyItem } from "@/types/keyboard.type";
 
+// 키보드로 조작하는 요소들: 여기에 포커스가 있을 땐 Enter/Space/방향키 등을 가로채지 않음
+const CONTROL_SELECTOR =
+  'button, a[href], summary, [role="button"], [role="link"], [role="menuitem"], [role="tab"], [role="switch"], [role="checkbox"], [role="radio"], [role="option"]';
+
 interface Sound {
   sound_id: number;
   sound_url: string;
@@ -187,19 +191,21 @@ export default function MainComponent({ products }: Props) {
     setPressedKeys((prev) => (prev.size ? new Set() : prev));
   };
 
-  // 탭 문자는 textarea 기본 동작이 포커스 이동이라 직접 넣어줌 (기존처럼 탭 입력 유지)
-  const insertTab = (input: HTMLTextAreaElement) => {
-    const start = input.selectionStart;
-    const end = input.selectionEnd;
-    setTypedText((prev) => `${prev.slice(0, start)}\t${prev.slice(end)}`);
-    requestAnimationFrame(() => {
-      input.selectionStart = input.selectionEnd = start + 1;
-    });
-  };
-
   // 데스크톱: 글자 입력/삭제/한글 조합/선택은 textarea가 알아서 처리하고,
   // 여기선 타건음, 키보드 하이라이트, 포커스 이동, 전체 선택만 처리함
   const handlePressKeyDown = (e: KeyboardEvent) => {
+    // Tab은 표준 포커스 이동에 맡김 (탭 문자 입력, 소리, 눌림 표시 없음)
+    if (e.key === "Tab") return;
+
+    // 버튼/링크 등을 조작하는 중이면 Enter/Space/방향키/Esc 같은 조작 키는 가로채지 않고,
+    // 소리와 눌림 표시도 내지 않음. 영문/숫자 같은 글자 키만 기존처럼 처리함
+    const eventTarget = e.target as HTMLElement | null;
+    const isControlTarget =
+      !!eventTarget &&
+      eventTarget !== desktopInputRef.current &&
+      !!eventTarget.closest(CONTROL_SELECTOR);
+    if (isControlTarget && (e.key.length !== 1 || e.key === " ")) return;
+
     // Mac은 Cmd를 누른 채 친 키의 keyup이 오지 않아서, Cmd 조합은 하이라이트하지 않음
     if (!e.metaKey) addPressedKey(e.code);
 
@@ -219,13 +225,6 @@ export default function MainComponent({ products }: Props) {
       e.preventDefault();
       input.focus();
       input.select();
-      return;
-    }
-
-    if (e.key === "Tab") {
-      e.preventDefault();
-      input.focus();
-      insertTab(input);
       return;
     }
 
