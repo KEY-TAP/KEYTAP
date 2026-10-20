@@ -3,9 +3,11 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { WITHDRAW_CONFIRM_TEXT } from "@/schemas/auth/signUpSchema";
 
 type WithdrawRequestBody = {
   password?: unknown;
+  confirmText?: unknown;
 };
 
 const getAccessToken = (request: NextRequest) => {
@@ -45,10 +47,7 @@ export async function POST(request: NextRequest) {
 
     const body = (await request.json().catch(() => ({}))) as WithdrawRequestBody;
     const password = typeof body.password === "string" ? body.password : "";
-
-    if (password.trim().length === 0) {
-      return NextResponse.json({ message: "비밀번호를 입력해주세요." }, { status: 400 });
-    }
+    const confirmText = typeof body.confirmText === "string" ? body.confirmText : "";
 
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
@@ -73,20 +72,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "로그인 정보를 확인할 수 없습니다." }, { status: 401 });
     }
 
-    if (!user.email) {
+    /**
+     * 이메일 가입자(비밀번호 있음): 비밀번호 재확인
+     * Google 등 비밀번호가 없는 계정: 확인 문구 입력으로 대체
+     * identities 정보가 없으면 기존 동작(비밀번호 재확인)을 유지
+     */
+    const hasPassword = user.identities
+      ? user.identities.some((identity) => identity.provider === "email")
+      : true;
+
+    if (hasPassword) {
+      if (password.trim().length === 0) {
+        return NextResponse.json({ message: "비밀번호를 입력해주세요." }, { status: 400 });
+      }
+
+      if (!user.email) {
+        return NextResponse.json(
+          { message: "이메일 계정만 비밀번호 재확인이 가능합니다." },
+          { status: 400 },
+        );
+      }
+
+      const { error: passwordError } = await supabaseAuth.auth.signInWithPassword({
+        email: user.email,
+        password,
+      });
+
+      if (passwordError) {
+        return NextResponse.json({ message: "비밀번호가 올바르지 않습니다." }, { status: 401 });
+      }
+    } else if (confirmText.trim() !== WITHDRAW_CONFIRM_TEXT) {
       return NextResponse.json(
-        { message: "이메일 계정만 비밀번호 재확인이 가능합니다." },
+        { message: `확인 문구가 올바르지 않습니다. "${WITHDRAW_CONFIRM_TEXT}"를 입력해주세요.` },
         { status: 400 },
       );
-    }
-
-    const { error: passwordError } = await supabaseAuth.auth.signInWithPassword({
-      email: user.email,
-      password,
-    });
-
-    if (passwordError) {
-      return NextResponse.json({ message: "비밀번호가 올바르지 않습니다." }, { status: 401 });
     }
 
     const deleteProfile = async () => {

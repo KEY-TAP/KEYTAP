@@ -8,6 +8,7 @@ import {
   hasPasswordChangeInput,
   profileUpdateSchema,
   withdrawSchema,
+  WITHDRAW_CONFIRM_TEXT,
 } from "@/schemas/auth/signUpSchema";
 
 // hook
@@ -34,6 +35,7 @@ type ProfileData = {
   agreeTerms?: boolean | null;
   agreePrivacy?: boolean | null;
   agreeMarketing?: boolean | null;
+  hasPassword?: boolean | null;
 };
 
 export default function ProfileForm() {
@@ -76,7 +78,9 @@ function ProfileFormContent({ profile }: { profile: ProfileData }) {
   }));
 
   const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
-  const [withdrawPassword, setWithdrawPassword] = useState("");
+  // 탈퇴 다이얼로그 입력값 (비밀번호 있는 계정은 비밀번호, 없는 계정은 확인 문구)
+  const [withdrawInput, setWithdrawInput] = useState("");
+  const hasPassword = profile.hasPassword !== false;
 
   const isSubmitting =
     updateProfileMutation.isPending ||
@@ -150,7 +154,7 @@ function ProfileFormContent({ profile }: { profile: ProfileData }) {
   const getWithdrawErrorMessage = (error: unknown) => {
     const message = error instanceof Error ? error.message : "회원탈퇴 중 오류가 발생했습니다.";
 
-    if (message.includes("비밀번호")) {
+    if (message.includes("비밀번호") || message.includes("확인 문구")) {
       return message;
     }
 
@@ -162,7 +166,7 @@ function ProfileFormContent({ profile }: { profile: ProfileData }) {
   };
 
   const handleOpenWithdrawDialog = () => {
-    setWithdrawPassword("");
+    setWithdrawInput("");
     setWithdrawDialogOpen(true);
   };
 
@@ -170,23 +174,34 @@ function ProfileFormContent({ profile }: { profile: ProfileData }) {
     if (withdrawMutation.isPending) return;
 
     setWithdrawDialogOpen(false);
-    setWithdrawPassword("");
+    setWithdrawInput("");
   };
 
   const handleConfirmWithdraw = async () => {
-    const parsedResult = withdrawSchema.safeParse({
-      password: withdrawPassword,
-    });
+    let payload: { password?: string; confirmText?: string };
 
-    if (!parsedResult.success) {
-      alert(parsedResult.error.issues[0]?.message ?? "비밀번호를 입력해주세요.");
-      return;
+    if (hasPassword) {
+      const parsedResult = withdrawSchema.safeParse({
+        password: withdrawInput,
+      });
+
+      if (!parsedResult.success) {
+        alert(parsedResult.error.issues[0]?.message ?? "비밀번호를 입력해주세요.");
+        return;
+      }
+
+      payload = { password: parsedResult.data.password };
+    } else {
+      if (withdrawInput.trim() !== WITHDRAW_CONFIRM_TEXT) {
+        alert(`"${WITHDRAW_CONFIRM_TEXT}"를 정확히 입력해주세요.`);
+        return;
+      }
+
+      payload = { confirmText: withdrawInput.trim() };
     }
 
     try {
-      await withdrawMutation.mutateAsync({
-        password: parsedResult.data.password,
-      });
+      await withdrawMutation.mutateAsync(payload);
 
       alert("회원탈퇴가 완료되었습니다.");
       router.replace("/MainPage");
@@ -411,10 +426,11 @@ function ProfileFormContent({ profile }: { profile: ProfileData }) {
 
       <WithdrawConfirmDialog
         open={withdrawDialogOpen}
-        password={withdrawPassword}
+        hasPassword={hasPassword}
+        value={withdrawInput}
         isPending={withdrawMutation.isPending}
         onClose={handleCloseWithdrawDialog}
-        onPasswordChange={setWithdrawPassword}
+        onValueChange={setWithdrawInput}
         onConfirm={handleConfirmWithdraw}
       />
     </Wrap>

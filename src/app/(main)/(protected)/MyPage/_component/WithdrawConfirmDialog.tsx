@@ -14,21 +14,26 @@ import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 
+import { WITHDRAW_CONFIRM_TEXT } from "@/schemas/auth/signUpSchema";
+
 type WithdrawConfirmDialogProps = {
   open: boolean;
-  password: string;
+  // 비밀번호가 있는 계정이면 비밀번호, 없는 계정(Google 등)이면 확인 문구를 입력받음
+  hasPassword: boolean;
+  value: string;
   isPending: boolean;
   onClose: () => void;
-  onPasswordChange: (value: string) => void;
+  onValueChange: (value: string) => void;
   onConfirm: () => void | Promise<void>;
 };
 
 export default function WithdrawConfirmDialog({
   open,
-  password,
+  hasPassword,
+  value,
   isPending,
   onClose,
-  onPasswordChange,
+  onValueChange,
   onConfirm,
 }: WithdrawConfirmDialogProps) {
   const handleClose = () => {
@@ -48,19 +53,23 @@ export default function WithdrawConfirmDialog({
       <WithdrawDialogTitle>회원탈퇴</WithdrawDialogTitle>
 
       <WithdrawDialogContent>
-        <WithdrawDialogText>비밀번호를 재확인 후 탈퇴하시겠습니까?</WithdrawDialogText>
+        <WithdrawDialogText>
+          {hasPassword
+            ? "비밀번호를 재확인 후 탈퇴하시겠습니까?"
+            : `탈퇴하시려면 "${WITHDRAW_CONFIRM_TEXT}"를 입력해주세요.`}
+        </WithdrawDialogText>
 
         <WithdrawPasswordField
           id="withdraw-password"
           name="withdrawPassword"
           fullWidth
-          type="password"
-          placeholder="현재 비밀번호"
+          type={hasPassword ? "password" : "text"}
+          placeholder={hasPassword ? "현재 비밀번호" : WITHDRAW_CONFIRM_TEXT}
           size="small"
-          autoComplete="current-password"
-          value={password}
+          autoComplete={hasPassword ? "current-password" : "off"}
+          value={value}
           disabled={isPending}
-          onChange={(e) => onPasswordChange(e.target.value)}
+          onChange={(e) => onValueChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();

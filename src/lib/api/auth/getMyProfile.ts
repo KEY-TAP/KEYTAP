@@ -11,6 +11,7 @@ export type MyProfile = {
   agreeTerms: boolean;
   agreePrivacy: boolean;
   agreeMarketing: boolean;
+  hasPassword: boolean;
 };
 
 export async function getMyProfile(): Promise<MyProfile> {
@@ -44,5 +45,7 @@ export async function getMyProfile(): Promise<MyProfile> {
     agreeTerms: agreementData?.terms_of_service ?? false,
     agreePrivacy: agreementData?.privacy_policy ?? false,
     agreeMarketing: agreementData?.marketing ?? false,
+    // 이메일 가입자는 비밀번호가 있고, Google 가입자는 없음 (identities 정보가 없으면 기존 동작 유지)
+    hasPassword: user.identities ? user.identities.some((identity) => identity.provider === "email") : true,
   };
 }

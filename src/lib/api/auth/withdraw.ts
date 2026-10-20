@@ -3,10 +3,11 @@
 import { supabase } from "@/lib/supabaseClient";
 
 export type WithdrawPayload = {
-  password: string;
+  password?: string;
+  confirmText?: string;
 };
 
-export async function withdraw({ password }: WithdrawPayload) {
+export async function withdraw({ password, confirmText }: WithdrawPayload) {
   const {
     data: { session },
     error: sessionError,
@@ -24,6 +25,7 @@ export async function withdraw({ password }: WithdrawPayload) {
     },
     body: JSON.stringify({
       password,
+      confirmText,
     }),
   });
 
