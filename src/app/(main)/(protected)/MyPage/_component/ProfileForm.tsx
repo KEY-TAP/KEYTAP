@@ -290,47 +290,50 @@ function ProfileFormContent({ profile }: { profile: ProfileData }) {
           <ValueText id="profile-email">{form.email}</ValueText>
         </Field>
 
-        <Field alignStart>
-          <Label htmlFor="profile-current-password">비밀번호</Label>
+        {/* 비밀번호가 없는 계정(Google 등)은 비밀번호 변경 영역을 보여주지 않음 */}
+        {hasPassword && (
+          <Field alignStart>
+            <Label htmlFor="profile-current-password">비밀번호</Label>
 
-          <InputWrap>
-            <InputField
-              id="profile-current-password"
-              name="currentPassword"
-              fullWidth
-              type="password"
-              placeholder="현재 비밀번호"
-              size="small"
-              autoComplete="current-password"
-              value={passwordForm.currentPassword}
-              onChange={handlePasswordChange("currentPassword")}
-            />
+            <InputWrap>
+              <InputField
+                id="profile-current-password"
+                name="currentPassword"
+                fullWidth
+                type="password"
+                placeholder="현재 비밀번호"
+                size="small"
+                autoComplete="current-password"
+                value={passwordForm.currentPassword}
+                onChange={handlePasswordChange("currentPassword")}
+              />
 
-            <InputField
-              id="profile-password"
-              name="password"
-              fullWidth
-              type="password"
-              placeholder="새 비밀번호"
-              size="small"
-              autoComplete="new-password"
-              value={passwordForm.password}
-              onChange={handlePasswordChange("password")}
-            />
+              <InputField
+                id="profile-password"
+                name="password"
+                fullWidth
+                type="password"
+                placeholder="새 비밀번호"
+                size="small"
+                autoComplete="new-password"
+                value={passwordForm.password}
+                onChange={handlePasswordChange("password")}
+              />
 
-            <InputField
-              id="profile-password-confirm"
-              name="passwordConfirm"
-              fullWidth
-              type="password"
-              placeholder="새 비밀번호 확인"
-              size="small"
-              autoComplete="new-password"
-              value={passwordForm.passwordConfirm}
-              onChange={handlePasswordChange("passwordConfirm")}
-            />
-          </InputWrap>
-        </Field>
+              <InputField
+                id="profile-password-confirm"
+                name="passwordConfirm"
+                fullWidth
+                type="password"
+                placeholder="새 비밀번호 확인"
+                size="small"
+                autoComplete="new-password"
+                value={passwordForm.passwordConfirm}
+                onChange={handlePasswordChange("passwordConfirm")}
+              />
+            </InputWrap>
+          </Field>
+        )}
 
         <Field>
           <Label requiredMark htmlFor="profile-name">
