@@ -126,6 +126,9 @@ export const profileUpdateSchema = z
 export type ProfileUpdateFormValues = z.infer<typeof profileUpdateSchema>;
 
 //** 회원 탈퇴 시 유효성 검사 **/
+// 비밀번호가 없는 계정(Google 등)이 회원탈퇴할 때 입력하는 확인 문구
+export const WITHDRAW_CONFIRM_TEXT = "탈퇴합니다";
+
 export const withdrawSchema = z.object({
   password: z.string().refine((value) => value.trim().length > 0, {
     message: "비밀번호를 입력해주세요.",

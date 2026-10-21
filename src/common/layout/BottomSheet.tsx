@@ -1,10 +1,10 @@
 // 하단 바텀 시트
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 
 // mui
-import { styled } from "@mui/material/styles";
+import { styled, alpha } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -24,6 +24,10 @@ export default function BottomSheet({
   children,
   thumbnailSrc,
 }: BottomSheetProps) {
+  // 한 번이라도 열어봤으면 화살표 움직임으로 알려주는 안내는 더 이상 안 보여줌
+  const [hasOpened, setHasOpened] = useState(false);
+  if (open && !hasOpened) setHasOpened(true);
+
   return (
     <>
       <Dimmed open={open ? 1 : 0} onClick={onClose} />
@@ -36,7 +40,7 @@ export default function BottomSheet({
         >
           {thumbnailSrc && <HandleThumbnail src={thumbnailSrc} alt="" />}
 
-          <KeyboardIcon open={open ? 1 : 0}>
+          <KeyboardIcon open={open ? 1 : 0} nudge={!open && !hasOpened}>
             <ArrowDropDownIcon />
           </KeyboardIcon>
         </ToggleButton>
@@ -96,8 +100,13 @@ const ToggleButton = styled(IconButton)(({ theme }) => ({
   background: theme.palette.secondary.main,
   boxShadow: "none",
 
-  "&:hover": {
-    background: theme.palette.secondary.main,
+  transition: "background-color .2s ease",
+  // 호버는 마우스 환경에서만: 배경이 살짝 진해짐
+  "@media (hover: hover)": {
+    "&:hover": {
+      background: theme.palette.secondary.main,
+      backgroundImage: `linear-gradient(${alpha(theme.palette.primary.main, 0.08)}, ${alpha(theme.palette.primary.main, 0.08)})`,
+    },
   },
 
   [theme.breakpoints.down("sm")]: {
@@ -122,8 +131,8 @@ const HandleThumbnail = styled("img")(({ theme }) => ({
 }));
 
 const KeyboardIcon = styled(Box, {
-  shouldForwardProp: (prop) => prop !== "open",
-})<{ open?: number }>(({ theme, open }) => ({
+  shouldForwardProp: (prop) => prop !== "open" && prop !== "nudge",
+})<{ open?: number; nudge?: boolean }>(({ theme, open, nudge }) => ({
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -134,6 +143,20 @@ const KeyboardIcon = styled(Box, {
 
   "& svg": {
     fontSize: "30px",
+    // 아직 안 열어본 동안만 화살표가 위로 살짝 움직임 (3번 반복 후 멈춤)
+    // 부모가 180도 돌아가 있어서 아래(+)로 움직이면 화면에서는 위로 보임
+    animation: nudge ? "sheetArrowNudge 2.4s ease-in-out 3" : "none",
+  },
+
+  "@keyframes sheetArrowNudge": {
+    "0%, 60%, 100%": { transform: "translateY(0)" },
+    "20%": { transform: "translateY(4px)" },
+    "40%": { transform: "translateY(0)" },
+    "50%": { transform: "translateY(2px)" },
+  },
+
+  "@media (prefers-reduced-motion: reduce)": {
+    "& svg": { animation: "none" },
   },
 }));
 

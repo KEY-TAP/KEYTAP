@@ -133,9 +133,14 @@ export default function LoginForm() {
       await signInMutation.mutateAsync(formValues);
 
       alert("로그인되었습니다.");
-      router.push(
-        redirectTo && redirectTo.startsWith("/") ? redirectTo : "/MainPage",
-      );
+      // 내부 경로만 허용 (//example.com, /\example.com 같은 외부 주소로 보내는 값은 제외)
+      const isSafeRedirect =
+        !!redirectTo &&
+        redirectTo.startsWith("/") &&
+        !redirectTo.startsWith("//") &&
+        !redirectTo.startsWith("/\\");
+
+      router.push(isSafeRedirect ? redirectTo : "/MainPage");
     } catch (error) {
       const message =
         error instanceof Error
