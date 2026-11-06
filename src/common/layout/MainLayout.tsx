@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import BottomSheet from "./BottomSheet";
 import ProductCarousel, {
@@ -40,6 +40,8 @@ interface MainProduct {
   product_name: string;
   hashtags?: string | null;
   image_url: string | null;
+  brand_id?: number | null;
+  brand_name?: string | null;
   switches: SwitchOption[];
 }
 
@@ -68,6 +70,35 @@ export default function MainLayout({
     () => new Set(likedProductIds),
   );
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // 바텀시트 브랜드 필터 (null이면 전체 보기)
+  const [selectedBrandId, setSelectedBrandId] = useState<number | null>(null);
+
+  // 등록된 상품이 있는 브랜드만 이름순으로 (드롭다운 항목)
+  const brandOptions = useMemo(() => {
+    const brandMap = new Map<number, string>();
+    products.forEach((product) => {
+      if (product.brand_id != null && product.brand_name) {
+        brandMap.set(product.brand_id, product.brand_name);
+      }
+    });
+    return Array.from(brandMap, ([id, name]) => ({ id, name })).sort((a, b) =>
+      a.name.localeCompare(b.name, "ko"),
+    );
+  }, [products]);
+
+  // 선택했던 브랜드가 목록에서 사라졌으면 전체로 취급
+  const activeBrandId = brandOptions.some(
+    (brand) => brand.id === selectedBrandId,
+  )
+    ? selectedBrandId
+    : null;
+
+  // 필터는 캐러셀 목록만 거름 (선택한 상품/썸네일/타건음은 그대로 유지)
+  const visibleProducts =
+    activeBrandId === null
+      ? products
+      : products.filter((product) => product.brand_id === activeBrandId);
 
   useEffect(() => {
     getCurrentUserId().then(setCurrentUserId);
@@ -149,7 +180,7 @@ export default function MainLayout({
   };
 
   // 등록된 상품 → 캐러셀 아이템으로 매핑 (선택 시 타건음 재생용 상품으로 지정)
-  const carouselItems: ProductCarouselItem[] = products.map((product) => ({
+  const carouselItems: ProductCarouselItem[] = visibleProducts.map((product) => ({
     id: product.product_id,
     imageSrc: product.image_url ?? undefined,
     title: product.product_name,
@@ -176,7 +207,18 @@ export default function MainLayout({
           onClose={handleCloseBottomSheet}
           thumbnailSrc={selectedProduct?.image_url}
         >
-          <ProductCarousel title="NUPHY" items={carouselItems} />
+          <ProductCarousel
+            brandFilter={
+              brandOptions.length > 0
+                ? {
+                    options: brandOptions,
+                    selectedId: activeBrandId,
+                    onChange: setSelectedBrandId,
+                  }
+                : undefined
+            }
+            items={carouselItems}
+          />
         </BottomSheet>
       )}
     </>
