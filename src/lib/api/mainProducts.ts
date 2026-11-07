@@ -30,7 +30,16 @@ export async function getMainProducts() {
 
   const { data, error } = await supabase
     .from("products")
-    .select(PRODUCT_SELECT)
+    .select(
+      `
+      ${PRODUCT_SELECT},
+      fk_brand_id,
+      brands (
+        brand_id,
+        brand_name
+      )
+    `,
+    )
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -39,6 +48,11 @@ export async function getMainProducts() {
     const primaryImage =
       product.product_images?.find((img) => img.is_primary) ??
       product.product_images?.[0];
+
+    // 브랜드 필터용 브랜드 정보 (브랜드가 없는 상품은 null)
+    const brand = Array.isArray(product.brands)
+      ? product.brands[0]
+      : product.brands;
 
     // 상품에 연결된 스위치별로 사운드를 구분해서 유지 (여러 스위치 중 선택해서 들을 수 있도록)
     const switches = (product.product_switches ?? [])
@@ -63,6 +77,8 @@ export async function getMainProducts() {
       description: product.description,
       hashtags: product.hashtags ?? null,
       image_url: primaryImage?.image_url ?? null,
+      brand_id: brand?.brand_id ?? null,
+      brand_name: brand?.brand_name ?? null,
       switches,
     };
   });
