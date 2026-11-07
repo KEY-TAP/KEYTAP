@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 
 // mui
@@ -13,6 +13,7 @@ import Typography from "@mui/material/Typography";
 import ArrowLeftIcon from "@mui/icons-material/ArrowLeft";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import BottomSheetCard from "./BottomSheetCard";
+import BrandFilter, { type BrandFilterProps } from "./BrandFilter";
 import { Button } from "@mui/material";
 
 export type ProductCarouselItem = {
@@ -33,12 +34,15 @@ export type ProductCarouselItem = {
 
 type ProductCarouselProps = {
   title?: string;
+  // 있으면 제목 자리에 브랜드 선택 드롭다운을 보여줌
+  brandFilter?: BrandFilterProps;
   items: ProductCarouselItem[];
 };
 
 // 바텀시트에 들어가는 캐러셀
 export default function ProductCarousel({
   title = "추천 상품",
+  brandFilter,
   items,
 }: ProductCarouselProps) {
   const [carouselRef, carouselApi] = useEmblaCarousel({
@@ -47,6 +51,14 @@ export default function ProductCarousel({
     slidesToScroll: 1,
     dragFree: false,
   });
+
+  // 브랜드 필터로 목록이 바뀌면 캐러셀을 다시 계산하고 맨 앞으로 이동
+  const itemKey = items.map((item) => item.id).join(",");
+  useEffect(() => {
+    if (!carouselApi) return;
+    carouselApi.reInit();
+    carouselApi.scrollTo(0, true);
+  }, [carouselApi, itemKey]);
 
   const scrollPrev = useCallback(() => {
     if (!carouselApi) return;
@@ -61,7 +73,11 @@ export default function ProductCarousel({
   return (
     <Wrap>
       <TopRow>
-        <SectionTitle>{title}</SectionTitle>
+        {brandFilter ? (
+          <BrandFilter {...brandFilter} />
+        ) : (
+          <SectionTitle>{title}</SectionTitle>
+        )}
       </TopRow>
 
       <CarouselOuter>
