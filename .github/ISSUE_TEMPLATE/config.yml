@@ -1,0 +1,2 @@
+# 템플릿 없이 빈 이슈도 만들 수 있게 허용
+blank_issues_enabled: true
