@@ -6,6 +6,9 @@ const COLORS = {
   primary: "#112F78",
   secondary: "#E8E9F2",
 
+  // 섹션 배경 (첫 화면 히어로 등 넓은 면에 쓰는 아주 옅은 회색)
+  subtle: "#F5F5F8",
+
   // Neutral (white ~ grey ~ black)
   white: "#FFFFFF",
   grey100: "#E8E8E8",
@@ -27,6 +30,13 @@ const COLORS = {
  *
  * theme에서는 CSS 변수 기반으로 지정해두면 관리가 편함.
  */
+
+// palette.background에 subtle 추가 (타입 확장)
+declare module "@mui/material/styles" {
+  interface TypeBackground {
+    subtle: string;
+  }
+}
 
 const FONT_BASE =
   'var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
@@ -50,6 +60,7 @@ const baseTheme = createTheme({
     background: {
       default: COLORS.white,
       paper: COLORS.secondary,
+      subtle: COLORS.subtle,
     },
 
     text: {
