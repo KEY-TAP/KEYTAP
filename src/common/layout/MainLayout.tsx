@@ -2,8 +2,8 @@
 
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import BottomSheet from "./BottomSheet";
 import ProductCarousel, {
   type ProductCarouselItem,
@@ -104,6 +104,22 @@ export default function MainLayout({
     getCurrentUserId().then(setCurrentUserId);
   }, []);
 
+  // 첫 화면 브랜드 카드에서 들어오면(/MainPage?brand=ID) 그 브랜드를 선택하고 바텀시트를 열어줌
+  // (등록된 상품이 없는 브랜드면 평소처럼 열림)
+  const handleBrandParam = useCallback(
+    (brandParam: string) => {
+      const brandId = Number(brandParam);
+      if (products.some((product) => product.brand_id === brandId)) {
+        setSelectedBrandId(brandId);
+        setIsBottomSheetOpen(true);
+      }
+
+      // 새로고침해도 다시 적용되지 않도록 주소에서 brand 값 제거
+      window.history.replaceState(null, "", pathname);
+    },
+    [products, pathname],
+  );
+
   // 이전 선택 상태 (같은 상품 안에서 스위치만 바뀐 건지 구분하려고 저장)
   const prevSelectionRef = useRef<{
     productId: number | null;
@@ -201,6 +217,12 @@ export default function MainLayout({
       <MainWrap>{children}</MainWrap>
 
       {isMainPage && (
+        <Suspense fallback={null}>
+          <BrandParamSync onBrandParam={handleBrandParam} />
+        </Suspense>
+      )}
+
+      {isMainPage && (
         <BottomSheet
           open={isBottomSheetOpen}
           onToggle={handleToggleBottomSheet}
@@ -223,6 +245,22 @@ export default function MainLayout({
       )}
     </>
   );
+}
+
+// 주소의 brand 값을 읽어서 전달 (useSearchParams는 Suspense 안에서 써야 정적 페이지 빌드가 깨지지 않음)
+function BrandParamSync({
+  onBrandParam,
+}: {
+  onBrandParam: (brandParam: string) => void;
+}) {
+  const searchParams = useSearchParams();
+  const brandParam = searchParams.get("brand");
+
+  useEffect(() => {
+    if (brandParam) onBrandParam(brandParam);
+  }, [brandParam, onBrandParam]);
+
+  return null;
 }
 
 const MainWrap = styled("main")(({ theme }) => ({
