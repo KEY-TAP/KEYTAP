@@ -85,7 +85,7 @@ export default function HeroSlider({ images }: Props) {
                 src={image.src}
                 alt={image.alt}
                 fill
-                sizes="(max-width: 980px) 90vw, 560px"
+                sizes="(max-width: 980px) 90vw, 40vw"
                 priority={index === 0}
                 style={{ objectFit: "cover" }}
               />
@@ -137,7 +137,8 @@ const SliderWrap = styled("section")(() => ({
 const SlideViewport = styled("div")(({ theme }) => ({
   position: "relative",
   width: "100%",
-  height: "360px",
+  // 넓은 화면에서는 칸 너비에 맞춰 4:3 비율로 커짐
+  aspectRatio: "4 / 3",
   borderRadius: "12px",
   overflow: "hidden",
   background: theme.palette.grey[100],
@@ -146,6 +147,7 @@ const SlideViewport = styled("div")(({ theme }) => ({
   boxSizing: "border-box",
 
   [theme.breakpoints.down("md")]: {
+    aspectRatio: "auto",
     height: "320px",
   },
 
