@@ -34,7 +34,9 @@ const LandingPage = ({ heroImages, brands }: Props) => {
               먼저 들어보세요.
             </HeroTitle>
             <HeroDescription>
-              스위치마다 다른 타건음을 직접 눌러 비교하고, 내 손에 맞는 키보드를 찾아보세요.
+              스위치마다 다른 타건음을 직접 눌러 비교하고
+              <br />
+              내 손에 맞는 키보드를 찾아보세요.
             </HeroDescription>
           </HeroCopy>
           <div>
@@ -94,14 +96,16 @@ const LandingWrap = styled("main")(({ theme }) => ({
 const HeroSection = styled("section")(({ theme }) => ({
   width: "100%",
   padding: "80px 10% 88px",
-  display: "flex",
+  // 글과 사진을 반반으로 나눠 넓은 화면에서도 둘 사이가 크게 벌어지지 않게 함
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
   alignItems: "center",
   gap: "64px",
   boxSizing: "border-box",
   background: theme.palette.background.subtle,
 
   [theme.breakpoints.down("md")]: {
-    flexDirection: "column",
+    gridTemplateColumns: "minmax(0, 1fr)",
     alignItems: "stretch",
     gap: "32px",
     padding: "48px 5% 56px",
@@ -113,14 +117,13 @@ const HeroSection = styled("section")(({ theme }) => ({
 }));
 
 const HeroText = styled("div")(({ theme }) => ({
-  flex: "1 1 0",
   minWidth: 0,
   display: "flex",
   flexDirection: "column",
   gap: "32px",
 
-  [theme.breakpoints.down("md")]: {
-    flex: "none",
+  [theme.breakpoints.up("lg")]: {
+    gap: "40px",
   },
 
   [theme.breakpoints.down("sm")]: {
@@ -128,10 +131,14 @@ const HeroText = styled("div")(({ theme }) => ({
   },
 }));
 
-const HeroCopy = styled("div")(() => ({
+const HeroCopy = styled("div")(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
   gap: "16px",
+
+  [theme.breakpoints.up("lg")]: {
+    gap: "24px",
+  },
 }));
 
 const HeroTitle = styled("h1")(({ theme }) => ({
@@ -141,6 +148,15 @@ const HeroTitle = styled("h1")(({ theme }) => ({
   letterSpacing: theme.typography.h1.letterSpacing,
   lineHeight: 1.2,
   color: theme.palette.primary.main,
+
+  // 넓은 화면에서는 커진 사진에 맞춰 글자도 키움
+  [theme.breakpoints.up("lg")]: {
+    fontSize: "3.5rem",
+  },
+
+  [theme.breakpoints.up("xl")]: {
+    fontSize: "4rem",
+  },
 
   [theme.breakpoints.down("md")]: {
     fontSize: "2.5rem",
@@ -153,10 +169,17 @@ const HeroTitle = styled("h1")(({ theme }) => ({
 
 const HeroDescription = styled("p")(({ theme }) => ({
   margin: 0,
-  maxWidth: "32ch",
   fontSize: "1.125rem",
   lineHeight: 1.6,
   color: theme.palette.text.primary,
+
+  [theme.breakpoints.up("lg")]: {
+    fontSize: "1.25rem",
+  },
+
+  [theme.breakpoints.up("xl")]: {
+    fontSize: "1.375rem",
+  },
 
   [theme.breakpoints.down("sm")]: {
     fontSize: "1rem",
@@ -178,19 +201,20 @@ const StartButton = styled(Button)(({ theme }) => ({
     outlineOffset: "3px",
   },
 
+  [theme.breakpoints.up("lg")]: {
+    minHeight: "56px",
+    padding: "0 32px",
+    fontSize: "1.125rem",
+  },
+
   [theme.breakpoints.down("sm")]: {
     width: "100%",
     minHeight: "52px",
   },
 })) as typeof Button;
 
-const HeroMedia = styled("div")(({ theme }) => ({
-  flex: "0 0 480px",
+const HeroMedia = styled("div")(() => ({
   minWidth: 0,
-
-  [theme.breakpoints.down("md")]: {
-    flex: "none",
-  },
 }));
 
 // 브랜드
@@ -228,6 +252,14 @@ const BrandTitle = styled("h2")(({ theme }) => ({
   lineHeight: 1.2,
   color: theme.palette.primary.main,
 
+  [theme.breakpoints.up("lg")]: {
+    fontSize: "2.5rem",
+  },
+
+  [theme.breakpoints.up("xl")]: {
+    fontSize: "2.75rem",
+  },
+
   [theme.breakpoints.down("sm")]: {
     fontSize: "1.875rem",
   },
@@ -238,6 +270,10 @@ const BrandDescription = styled("p")(({ theme }) => ({
   fontSize: "1rem",
   lineHeight: 1.5,
   color: theme.palette.text.primary,
+
+  [theme.breakpoints.up("lg")]: {
+    fontSize: "1.125rem",
+  },
 }));
 
 const BrandGrid = styled("ul")(({ theme }) => ({
@@ -295,6 +331,14 @@ const BrandName = styled("span")(({ theme }) => ({
   lineHeight: 1.25,
   color: theme.palette.text.primary,
 
+  [theme.breakpoints.up("lg")]: {
+    fontSize: "1.5rem",
+  },
+
+  [theme.breakpoints.up("xl")]: {
+    fontSize: "1.625rem",
+  },
+
   [theme.breakpoints.down("sm")]: {
     fontSize: "1.25rem",
   },
@@ -304,4 +348,12 @@ const BrandCount = styled("span")(({ theme }) => ({
   fontSize: "0.875rem",
   lineHeight: 1.4,
   color: theme.palette.text.primary,
+
+  [theme.breakpoints.up("lg")]: {
+    fontSize: "0.9375rem",
+  },
+
+  [theme.breakpoints.up("xl")]: {
+    fontSize: "1rem",
+  },
 }));
