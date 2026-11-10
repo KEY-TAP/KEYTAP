@@ -15,7 +15,7 @@ const HERO_IMAGES: HeroImage[] = [
 // 접속할 때마다 사진 순서를 새로 섞기 위해 항상 요청 시점에 렌더링
 export const dynamic = "force-dynamic";
 
-// Explore Brands에 보여줄 브랜드 수
+// 브랜드 영역에 보여줄 브랜드 수
 const BRAND_COUNT = 4;
 
 // 배열 순서를 무작위로 섞기 (원본은 그대로 두고 새 배열 반환)
