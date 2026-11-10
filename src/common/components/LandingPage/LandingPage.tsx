@@ -17,7 +17,7 @@ export interface LandingBrand {
 interface Props {
   // 히어로 사진 (접속할 때마다 순서가 바뀜)
   heroImages: HeroImage[];
-  // Explore Brands에 보여줄 브랜드 (등록 제품이 많은 순 최대 4개)
+  // 브랜드 영역에 보여줄 브랜드 (등록 제품이 많은 순 최대 4개)
   brands: LandingBrand[];
 }
 
@@ -26,58 +26,54 @@ const LandingPage = ({ heroImages, brands }: Props) => {
     <LandingWrap>
       {/* 히어로 */}
       <HeroSection>
-        <HeroInner>
-          <HeroText>
+        <HeroText>
+          <HeroCopy>
             <HeroTitle>
-              Find Your
+              사기 전에,
               <br />
-              Perfect Typing Feel.
+              먼저 들어보세요.
             </HeroTitle>
             <HeroDescription>
-              키보드를 직접 경험하듯,
-              <br />
-              나에게 맞는 타건감을 발견하는 공간.
+              스위치마다 다른 타건음을 직접 눌러 비교하고, 내 손에 맞는 키보드를 찾아보세요.
             </HeroDescription>
-            <div>
-              <StartButton
-                component={Link}
-                href="/MainPage"
-                variant="contained"
-                disableElevation
-                endIcon={<ChevronRightRoundedIcon />}
-              >
-                지금 시작하기
-              </StartButton>
-            </div>
-          </HeroText>
+          </HeroCopy>
+          <div>
+            <StartButton
+              component={Link}
+              href="/MainPage"
+              variant="contained"
+              disableElevation
+              endIcon={<ChevronRightRoundedIcon />}
+            >
+              키보드 소리 들으러 가기
+            </StartButton>
+          </div>
+        </HeroText>
 
-          <HeroMedia>
-            <HeroSlider images={heroImages} />
-          </HeroMedia>
-        </HeroInner>
+        <HeroMedia>
+          <HeroSlider images={heroImages} />
+        </HeroMedia>
       </HeroSection>
 
       {/* 브랜드 */}
       {brands.length > 0 && (
-        <BrandSection aria-labelledby="explore-brands-title">
-          <BrandInner>
-            <BrandHeading>
-              <BrandTitle id="explore-brands-title">Explore Brands</BrandTitle>
-              <BrandDescription>다양한 브랜드의 키보드를 만나보세요</BrandDescription>
-            </BrandHeading>
+        <BrandSection aria-labelledby="brand-section-title">
+          <BrandHeading>
+            <BrandTitle id="brand-section-title">브랜드별로 들어보기</BrandTitle>
+            <BrandDescription>브랜드를 고르면 그 브랜드 키보드만 모아서 보여드려요.</BrandDescription>
+          </BrandHeading>
 
-            <BrandGrid>
-              {brands.map((brand) => (
-                <li key={brand.brand_id}>
-                  {/* 해당 브랜드가 선택된 상태로 MainPage 열기 */}
-                  <BrandCard href={`/MainPage?brand=${brand.brand_id}`}>
-                    <BrandName>{brand.brand_name}</BrandName>
-                    <BrandCount>등록 제품 {brand.product_count}개</BrandCount>
-                  </BrandCard>
-                </li>
-              ))}
-            </BrandGrid>
-          </BrandInner>
+          <BrandGrid>
+            {brands.map((brand) => (
+              <li key={brand.brand_id}>
+                {/* 해당 브랜드가 선택된 상태로 MainPage 열기 */}
+                <BrandCard href={`/MainPage?brand=${brand.brand_id}`}>
+                  <BrandName>{brand.brand_name}</BrandName>
+                  <BrandCount>등록 제품 {brand.product_count}개</BrandCount>
+                </BrandCard>
+              </li>
+            ))}
+          </BrandGrid>
         </BrandSection>
       )}
     </LandingWrap>
@@ -87,53 +83,55 @@ const LandingPage = ({ heroImages, brands }: Props) => {
 export default LandingPage;
 
 // 스타일드 컴포넌트
+// 좌우 여백은 MainPage(MainLayout)·푸터와 같은 10% / 5%로 맞춰 왼쪽 시작점을 통일함
 const LandingWrap = styled("main")(({ theme }) => ({
   width: "100%",
   background: theme.palette.background.default,
+  wordBreak: "keep-all",
 }));
 
 // 히어로
 const HeroSection = styled("section")(({ theme }) => ({
   width: "100%",
-  background: theme.palette.background.subtle,
-}));
-
-const HeroInner = styled("div")(({ theme }) => ({
-  maxWidth: "1200px",
-  margin: "0 auto",
-  padding: "64px 40px 80px",
+  padding: "80px 10% 88px",
   display: "flex",
   alignItems: "center",
-  gap: "48px",
+  gap: "64px",
   boxSizing: "border-box",
+  background: theme.palette.background.subtle,
 
   [theme.breakpoints.down("md")]: {
     flexDirection: "column",
     alignItems: "stretch",
-    gap: "28px",
+    gap: "32px",
     padding: "48px 5% 56px",
   },
 
   [theme.breakpoints.down("sm")]: {
-    gap: "20px",
-    padding: "36px 24px 40px",
+    padding: "40px 5% 48px",
   },
 }));
 
 const HeroText = styled("div")(({ theme }) => ({
-  flex: "1 1 600px",
+  flex: "1 1 0",
   minWidth: 0,
   display: "flex",
   flexDirection: "column",
-  gap: "24px",
+  gap: "32px",
 
   [theme.breakpoints.down("md")]: {
     flex: "none",
   },
 
   [theme.breakpoints.down("sm")]: {
-    gap: "20px",
+    gap: "24px",
   },
+}));
+
+const HeroCopy = styled("div")(() => ({
+  display: "flex",
+  flexDirection: "column",
+  gap: "16px",
 }));
 
 const HeroTitle = styled("h1")(({ theme }) => ({
@@ -141,8 +139,7 @@ const HeroTitle = styled("h1")(({ theme }) => ({
   fontSize: theme.typography.h1.fontSize,
   fontWeight: theme.typography.h1.fontWeight,
   letterSpacing: theme.typography.h1.letterSpacing,
-  lineHeight: 1.15,
-  whiteSpace: "nowrap",
+  lineHeight: 1.2,
   color: theme.palette.primary.main,
 
   [theme.breakpoints.down("md")]: {
@@ -150,38 +147,45 @@ const HeroTitle = styled("h1")(({ theme }) => ({
   },
 
   [theme.breakpoints.down("sm")]: {
-    fontSize: "clamp(1.5rem, 7.4vw, 1.8125rem)",
-    lineHeight: 1.2,
+    fontSize: "2rem",
   },
 }));
 
 const HeroDescription = styled("p")(({ theme }) => ({
   margin: 0,
-  fontSize: "1.1875rem",
+  maxWidth: "32ch",
+  fontSize: "1.125rem",
   lineHeight: 1.6,
   color: theme.palette.text.primary,
 
   [theme.breakpoints.down("sm")]: {
-    fontSize: "1.0625rem",
+    fontSize: "1rem",
   },
 }));
 
 const StartButton = styled(Button)(({ theme }) => ({
-  minHeight: "52px",
-  padding: "0 28px",
-  fontSize: "1.0625rem",
+  minHeight: "48px",
+  padding: "0 24px",
+  fontSize: "1rem",
 
   "& .MuiButton-endIcon": {
     marginLeft: "4px",
   },
 
+  // 키보드로 이동했을 때 포커스 위치가 잘 보이도록 테두리 표시
+  "&.Mui-focusVisible": {
+    outline: `2px solid ${theme.palette.primary.main}`,
+    outlineOffset: "3px",
+  },
+
   [theme.breakpoints.down("sm")]: {
     width: "100%",
+    minHeight: "52px",
   },
 })) as typeof Button;
 
 const HeroMedia = styled("div")(({ theme }) => ({
-  flex: "1 1 440px",
+  flex: "0 0 480px",
   minWidth: 0,
 
   [theme.breakpoints.down("md")]: {
@@ -192,32 +196,28 @@ const HeroMedia = styled("div")(({ theme }) => ({
 // 브랜드
 const BrandSection = styled("section")(({ theme }) => ({
   width: "100%",
-  background: theme.palette.background.default,
-}));
-
-const BrandInner = styled("div")(({ theme }) => ({
-  maxWidth: "1200px",
-  margin: "0 auto",
-  padding: "64px 40px 80px",
-  display: "flex",
-  flexDirection: "column",
-  gap: "32px",
+  padding: "80px 10%",
   boxSizing: "border-box",
+  background: theme.palette.background.default,
 
   [theme.breakpoints.down("md")]: {
     padding: "56px 5% 64px",
   },
 
   [theme.breakpoints.down("sm")]: {
-    gap: "24px",
-    padding: "48px 24px 56px",
+    padding: "48px 5% 56px",
   },
 }));
 
-const BrandHeading = styled("div")(() => ({
+const BrandHeading = styled("div")(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
   gap: "8px",
+  marginBottom: "32px",
+
+  [theme.breakpoints.down("sm")]: {
+    marginBottom: "24px",
+  },
 }));
 
 const BrandTitle = styled("h2")(({ theme }) => ({
@@ -225,6 +225,7 @@ const BrandTitle = styled("h2")(({ theme }) => ({
   fontSize: "2.25rem",
   fontWeight: theme.typography.h2.fontWeight,
   letterSpacing: theme.typography.h2.letterSpacing,
+  lineHeight: 1.2,
   color: theme.palette.primary.main,
 
   [theme.breakpoints.down("sm")]: {
@@ -235,11 +236,8 @@ const BrandTitle = styled("h2")(({ theme }) => ({
 const BrandDescription = styled("p")(({ theme }) => ({
   margin: 0,
   fontSize: "1rem",
+  lineHeight: 1.5,
   color: theme.palette.text.primary,
-
-  [theme.breakpoints.down("sm")]: {
-    fontSize: "0.9375rem",
-  },
 }));
 
 const BrandGrid = styled("ul")(({ theme }) => ({
@@ -248,7 +246,7 @@ const BrandGrid = styled("ul")(({ theme }) => ({
   listStyle: "none",
   display: "grid",
   gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-  gap: "20px",
+  gap: "24px",
 
   [theme.breakpoints.down("md")]: {
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
@@ -257,7 +255,6 @@ const BrandGrid = styled("ul")(({ theme }) => ({
 
   [theme.breakpoints.down("sm")]: {
     gridTemplateColumns: "minmax(0, 1fr)",
-    gap: "14px",
   },
 }));
 
@@ -275,29 +272,28 @@ const BrandCard = styled(Link)(({ theme }) => ({
   textDecoration: "none",
   color: theme.palette.text.primary,
   boxSizing: "border-box",
-  transition: "border-color .3s ease",
+  transition: "border-color .2s ease-out",
 
   "&:hover": {
     borderColor: theme.palette.primary.main,
   },
 
   "&:focus-visible": {
-    outline: `3px solid ${theme.palette.primary.main}`,
+    outline: `2px solid ${theme.palette.primary.main}`,
     outlineOffset: "2px",
   },
 
   [theme.breakpoints.down("sm")]: {
     minHeight: "120px",
-    padding: "20px",
-    gap: "28px",
+    gap: "24px",
   },
 }));
 
 const BrandName = styled("span")(({ theme }) => ({
   fontSize: "1.375rem",
   fontWeight: 700,
+  lineHeight: 1.25,
   color: theme.palette.text.primary,
-  wordBreak: "keep-all",
 
   [theme.breakpoints.down("sm")]: {
     fontSize: "1.25rem",
@@ -306,5 +302,6 @@ const BrandName = styled("span")(({ theme }) => ({
 
 const BrandCount = styled("span")(({ theme }) => ({
   fontSize: "0.875rem",
+  lineHeight: 1.4,
   color: theme.palette.text.primary,
 }));

@@ -6,7 +6,8 @@ import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 
 // mui
-import { styled } from "@mui/material/styles";
+import Tooltip from "@mui/material/Tooltip";
+import { alpha, styled } from "@mui/material/styles";
 
 export interface HeroImage {
   src: string;
@@ -63,6 +64,8 @@ export default function HeroSlider({ images }: Props) {
 
   if (images.length === 0) return null;
 
+  const toggleLabel = isPlaying ? "슬라이드 자동 넘김 멈추기" : "슬라이드 자동 넘김 재생";
+
   return (
     <SliderWrap role="region" aria-roledescription="carousel" aria-label="키보드 사진">
       <SlideViewport aria-live={isPlaying ? "off" : "polite"}>
@@ -95,25 +98,28 @@ export default function HeroSlider({ images }: Props) {
         <ControlRow>
           <DotList>
             {images.map((image, index) => (
-              <DotButton
-                key={image.src}
-                type="button"
-                aria-label={`${index + 1}번째 사진 보기`}
-                aria-current={index === currentIndex}
-                onClick={() => setCurrentIndex(index)}
-              >
-                <span data-active={index === currentIndex} />
-              </DotButton>
+              <Tooltip key={image.src} title={`${index + 1}번째 사진 보기`}>
+                <DotButton
+                  type="button"
+                  aria-label={`${index + 1}번째 사진 보기`}
+                  aria-current={index === currentIndex}
+                  onClick={() => setCurrentIndex(index)}
+                >
+                  <span data-active={index === currentIndex} />
+                </DotButton>
+              </Tooltip>
             ))}
           </DotList>
 
-          <ToggleButton
-            type="button"
-            aria-label={isPlaying ? "슬라이드 자동 넘김 멈추기" : "슬라이드 자동 넘김 재생"}
-            onClick={() => setUserPaused(isPlaying)}
-          >
-            {isPlaying ? <PauseRoundedIcon /> : <PlayArrowRoundedIcon />}
-          </ToggleButton>
+          <Tooltip title={toggleLabel}>
+            <ToggleButton
+              type="button"
+              aria-label={toggleLabel}
+              onClick={() => setUserPaused(isPlaying)}
+            >
+              {isPlaying ? <PauseRoundedIcon /> : <PlayArrowRoundedIcon />}
+            </ToggleButton>
+          </Tooltip>
         </ControlRow>
       )}
     </SliderWrap>
@@ -125,24 +131,26 @@ const SliderWrap = styled("section")(() => ({
   width: "100%",
   display: "flex",
   flexDirection: "column",
-  gap: "6px",
+  gap: "8px",
 }));
 
 const SlideViewport = styled("div")(({ theme }) => ({
   position: "relative",
   width: "100%",
-  height: "380px",
+  height: "360px",
   borderRadius: "12px",
   overflow: "hidden",
   background: theme.palette.grey[100],
-  boxShadow: "0 20px 48px rgba(29, 30, 36, 0.12)",
+  border: `1px solid ${alpha(theme.palette.common.black, 0.08)}`,
+  boxShadow: `0 4px 16px ${alpha(theme.palette.common.black, 0.06)}`,
+  boxSizing: "border-box",
 
   [theme.breakpoints.down("md")]: {
-    height: "340px",
+    height: "320px",
   },
 
   [theme.breakpoints.down("sm")]: {
-    height: "280px",
+    height: "256px",
   },
 }));
 
@@ -150,7 +158,7 @@ const Slide = styled("div")(() => ({
   position: "absolute",
   inset: 0,
   opacity: 0,
-  transition: "opacity 700ms ease",
+  transition: "opacity 300ms ease-out",
 
   "&[data-active='true']": {
     opacity: 1,
