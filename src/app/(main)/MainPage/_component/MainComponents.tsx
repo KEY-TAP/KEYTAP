@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { HEARING_ICON, PAUSE_ICON, PLAY_ICON } from "@/common/icons/icons";
+import { HEARING_ICON, PLAY_ICON } from "@/common/icons/icons";
 import { useProductStore } from "@/store/useProductStore";
 import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
 import VolumeOffRoundedIcon from "@mui/icons-material/VolumeOffRounded";
@@ -380,16 +380,8 @@ export default function MainComponent({ products }: Props) {
             onClick={toggleLongSound}
             playing={isPlaying ? 1 : 0}
           >
-            {isPlaying ? <Image src={PAUSE_ICON} alt="pause icon" width={28} height={28} /> : <Image src={PLAY_ICON} alt="play icon" width={28} height={28} />}
+            {isPlaying ? <PauseSpinIcon /> : <Image className="audio-icon" src={PLAY_ICON} alt="play icon" width={28} height={28} />}
             <AudioTitle>{selectedProduct?.product_name ?? "모델을 선택해주세요"}</AudioTitle>
-            {isPlaying && (
-              <PlayingBars aria-hidden="true">
-                <span />
-                <span />
-                <span />
-                <span />
-              </PlayingBars>
-            )}
           </AudioButton>
 
           {selectedProduct && selectedProduct.switches.length > 1 && (
@@ -644,49 +636,51 @@ const AudioButton = styled("button", {
   // 재생 중엔 제목이 호버할 때와 같은 primary 색으로 유지됨
   color: playing ? theme.palette.primary.main : theme.palette.common.black,
   transition: "color .2s ease",
-  "& svg": { fontSize: "2rem", transition: "color .2s ease" },
-  "& img": { transition: "transform .15s ease" },
-  "&:active img": { transform: "scale(0.92)" },
+  "& .audio-icon": { transition: "transform .15s ease" },
+  "&:active .audio-icon": { transform: "scale(0.92)" },
   "@media (hover: hover)": {
     "&:hover": { color: theme.palette.primary.main },
-    "&:hover img": { transform: "scale(1.1)" },
-    "&:active img": { transform: "scale(0.92)" },
+    "&:hover .audio-icon": { transform: "scale(1.1)" },
+    "&:active .audio-icon": { transform: "scale(0.92)" },
   },
   "@media (prefers-reduced-motion: reduce)": {
-    "& img": { transition: "none" },
-    "&:hover img, &:active img": { transform: "none" },
+    "& .audio-icon": { transition: "none" },
+    "&:hover .audio-icon, &:active .audio-icon": { transform: "none" },
   },
 }));
 
-// 재생 중에만 제목 오른쪽에 나타나는 소리 막대 (절대 위치라 제목 위치는 안 밀림)
-const PlayingBars = styled("span")(({ theme }) => ({
-  position: "absolute",
-  top: 0,
-  bottom: 0,
-  left: "100%",
-  marginLeft: "8px",
-  display: "flex",
-  alignItems: "center",
-  gap: "3px",
-  "& span": {
-    display: "block",
-    width: "4px",
-    height: "20px",
-    borderRadius: "2px",
-    background: theme.palette.primary.main,
-    transformOrigin: "center",
-    animation: "playingBar .9s ease-in-out infinite",
+// 재생 중 아이콘: 기존 정지 아이콘(public/pauseIcon.svg)과 같은 모양을 인라인으로 그리고
+// 바깥 원(점 포함)만 천천히 돌려서 재생 중임을 표시함. 가운데 정지 표시(❚❚)는 그대로 둠
+const PAUSE_ICON_BARS =
+  "M10.4997 17.4997H12.833V10.4997H10.4997V17.4997ZM15.1663 17.4997H17.4997V10.4997H15.1663V17.4997Z";
+const PAUSE_ICON_RING =
+  "M9.44968 24.7476C8.03023 24.1351 6.79551 23.3038 5.74551 22.2538C4.69551 21.2038 3.86426 19.9691 3.25176 18.5497C2.63926 17.1302 2.33301 15.6136 2.33301 13.9997C2.33301 13.1636 2.42051 12.342 2.59551 11.5351C2.77051 10.7281 3.02329 9.94551 3.35384 9.18717L5.16217 10.9955C5.00662 11.5011 4.88509 12.0018 4.79759 12.4976C4.71009 12.9934 4.66634 13.4941 4.66634 13.9997C4.66634 16.6052 5.57051 18.8122 7.37884 20.6205C9.18718 22.4288 11.3941 23.333 13.9997 23.333C16.6052 23.333 18.8122 22.4288 20.6205 20.6205C22.4288 18.8122 23.333 16.6052 23.333 13.9997C23.333 11.3941 22.4288 9.18718 20.6205 7.37884C18.8122 5.57051 16.6052 4.66634 13.9997 4.66634C13.4747 4.66634 12.9643 4.71009 12.4684 4.79759C11.9726 4.88509 11.4816 5.00662 10.9955 5.16217L9.21634 3.38301C9.99412 3.03301 10.7719 2.77051 11.5497 2.59551C12.3275 2.42051 13.1441 2.33301 13.9997 2.33301C15.6136 2.33301 17.1302 2.63926 18.5497 3.25176C19.9691 3.86426 21.2038 4.69551 22.2538 5.74551C23.3038 6.79551 24.1351 8.03023 24.7476 9.44968C25.3601 10.8691 25.6663 12.3858 25.6663 13.9997C25.6663 15.6136 25.3601 17.1302 24.7476 18.5497C24.1351 19.9691 23.3038 21.2038 22.2538 22.2538C21.2038 23.3038 19.9691 24.1351 18.5497 24.7476C17.1302 25.3601 15.6136 25.6663 13.9997 25.6663C12.3858 25.6663 10.8691 25.3601 9.44968 24.7476ZM5.17676 7.65592C4.83648 7.31565 4.66634 6.90245 4.66634 6.41634C4.66634 5.93023 4.83648 5.51704 5.17676 5.17676C5.51704 4.83648 5.93023 4.66634 6.41634 4.66634C6.90245 4.66634 7.31565 4.83648 7.65592 5.17676C7.9962 5.51704 8.16634 5.93023 8.16634 6.41634C8.16634 6.90245 7.9962 7.31565 7.65592 7.65592C7.31565 7.9962 6.90245 8.16634 6.41634 8.16634C5.93023 8.16634 5.51704 7.9962 5.17676 7.65592Z";
+
+function PauseSpinIcon() {
+  return (
+    <SpinIcon className="audio-icon" width={28} height={28} viewBox="0 0 28 28" role="img" aria-label="pause icon">
+      <g className="ring">
+        <path d={PAUSE_ICON_RING} fill="currentColor" />
+      </g>
+      <path d={PAUSE_ICON_BARS} fill="currentColor" />
+    </SpinIcon>
+  );
+}
+
+const SpinIcon = styled("svg")(({ theme }) => ({
+  flexShrink: 0,
+  color: theme.palette.common.black,
+  "& .ring": {
+    transformOrigin: "14px 14px",
+    animation: "pauseRingSpin 2s linear infinite",
   },
-  "& span:nth-of-type(2)": { animationDelay: ".15s" },
-  "& span:nth-of-type(3)": { animationDelay: ".3s" },
-  "& span:nth-of-type(4)": { animationDelay: ".45s" },
-  "@keyframes playingBar": {
-    "0%, 100%": { transform: "scaleY(0.3)" },
-    "50%": { transform: "scaleY(1)" },
+  "@keyframes pauseRingSpin": {
+    from: { transform: "rotate(0deg)" },
+    to: { transform: "rotate(360deg)" },
   },
-  // 모션 줄이기 설정에서는 움직이지 않고 막대 높이만 보여줌
+  // 모션 줄이기 설정에서는 회전하지 않음
   "@media (prefers-reduced-motion: reduce)": {
-    "& span": { animation: "none", transform: "scaleY(0.6)" },
+    "& .ring": { animation: "none" },
   },
 }));
 

@@ -50,6 +50,12 @@ const baseTheme = createTheme({
       lg: 1300,
       xl: 1920,
     },
+    // 미디어쿼리 경계값을 정수로 맞춤 (MUI 기본 step 5 → down("md")가 979.95px로 생성됨)
+    // step 100 → down("md") = max-width: 979px, down("sm") = max-width: 679px (up()은 변화 없음)
+    // 브라우저 확대로 폭이 979~980px 사이 소수가 되면 down("md")가 빠져 980px(PC) 화면과 같게 보임
+    // 반응형은 항상 theme.breakpoints.up/down()으로 작성하고, @media (max-width: 980px)처럼 직접 쓰지 않기
+    // (직접 쓰면 경계값이 어긋나 같은 폭에서 서로 다른 스타일이 적용될 수 있음)
+    step: 100,
   },
 
   palette: {
