@@ -209,7 +209,7 @@ const StartButton = styled(Button)(({ theme }) => ({
 
   [theme.breakpoints.down("sm")]: {
     width: "100%",
-    minHeight: "52px",
+    minHeight: "44px",
   },
 })) as typeof Button;
 

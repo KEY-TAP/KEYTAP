@@ -131,29 +131,4 @@ samp {
     "Liberation Mono", "Courier New", monospace;
 }
 
-/* ===== breakpoint 기반 반응형 ===== */
-/* md 이하 (≤980) */
-@media (max-width: 980px) {
-  html {
-    font-size: 15px;
-    letter-spacing: -0.54px;
-  }
-}
-
-/* sm 이하 (≤680) */
-@media (max-width: 680px) {
-  html {
-    font-size: 14px;
-  }
-
-  body {
-    line-height: 120%;
-  }
-
-  /* input/textarea에서만 자동 확대 방지 */
-  input,
-  textarea {
-    text-size-adjust: none;
-    -webkit-text-size-adjust: none;
-  }
-}
+/* 반응형 기본 글자 크기·줄 높이는 theme.ts(MuiCssBaseline)에서 관리 */

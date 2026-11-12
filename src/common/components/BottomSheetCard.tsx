@@ -5,7 +5,7 @@ import { useState } from "react";
 import Image from "next/image";
 
 // mui
-import { styled } from "@mui/material/styles";
+import { styled, alpha } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 
@@ -112,7 +112,11 @@ export default function BottomSheetCard({
         <TitleText>{title}</TitleText>
 
         {displayTags.length > 0 ? (
-          <TagText>{displayTags.map((tag) => `#${tag}`).join(" ")}</TagText>
+          <TagList>
+            {displayTags.map((tag) => (
+              <TagBadge key={tag}>{tag}</TagBadge>
+            ))}
+          </TagList>
         ) : formattedPrice ? (
           <PriceText>{formattedPrice}</PriceText>
         ) : null}
@@ -222,18 +226,25 @@ const TitleText = styled(Typography)(() => ({
   wordBreak: "keep-all",
 }));
 
-const TagText = styled(Typography)(({ theme }) => ({
-  marginTop: "10px",
-  fontSize: "16px",
-  fontWeight: 500,
-  lineHeight: 1.4,
-  color: theme.palette.text.primary,
-  display: "-webkit-box",
-  WebkitLineClamp: 1,
-  WebkitBoxOrient: "vertical",
+// 해시태그는 제품명보다 작은 배지로 표시 (정보 순서: 제품명 → 태그)
+const TagList = styled("div")(() => ({
+  marginTop: "8px",
+  display: "flex",
+  justifyContent: "center",
+  gap: "4px",
   overflow: "hidden",
-  textOverflow: "ellipsis",
-  wordBreak: "keep-all",
+}));
+
+const TagBadge = styled("span")(({ theme }) => ({
+  flexShrink: 0,
+  padding: "3px 8px",
+  borderRadius: "4px",
+  background: alpha(theme.palette.primary.main, 0.08),
+  color: theme.palette.primary.main,
+  fontSize: "12px",
+  fontWeight: 600,
+  lineHeight: 1.4,
+  whiteSpace: "nowrap",
 }));
 
 const PriceText = styled(Typography)(({ theme }) => ({
