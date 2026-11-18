@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { deleteProductClient } from "@/lib/api/productsClients";
 import SearchField from "../../_common/_components/SearchField";
+import AlertDialog from "../../_common/_components/AlertDialog";
+import { exportProducts } from "./exportProducts";
 
 // mui
 import { alpha, styled } from "@mui/material/styles";
@@ -34,7 +36,8 @@ interface Product {
   product_type: string | null;
   description: string | null;
   created_at: string;
-  brands: { brand_name: string }[] | null;
+  // 상품 → 브랜드는 하나만 연결돼 실제로는 객체로 오지만, 조회 함수 타입은 배열로 추론돼 둘 다 받음
+  brands: { brand_name: string } | { brand_name: string }[] | null;
   product_images: ProductImage[] | null;
   product_switches?: ProductSwitchPlay[] | null;
 }
@@ -49,6 +52,9 @@ const getThumbnailUrl = (images: Product["product_images"]) => {
   if (!images || images.length === 0) return null;
   return images.find((img) => img.is_primary)?.image_url ?? images[0].image_url;
 };
+
+// 브랜드명 (객체·배열 어느 형태로 와도 처리)
+const getBrandName = (brands: Product["brands"]) => (Array.isArray(brands) ? brands[0] : brands)?.brand_name ?? "-";
 
 // 상품에 연결된 모든 스위치의 재생 횟수를 합산
 const getPlayCount = (switches: Product["product_switches"]) => {
@@ -78,6 +84,23 @@ export default function ProductTable({ products }: Props) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const [keyword, setKeyword] = useState("");
+
+  // 전체 목록 엑셀 내려받기 (연속 클릭 시 중복 실행 방지)
+  const isExportingRef = useRef(false);
+  const [exportError, setExportError] = useState("");
+
+  const handleExport = async () => {
+    if (isExportingRef.current) return;
+    isExportingRef.current = true;
+
+    try {
+      await exportProducts(products);
+    } catch {
+      setExportError("목록을 내보내지 못했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      isExportingRef.current = false;
+    }
+  };
 
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, id: number) => {
     setAnchorEl(e.currentTarget);
@@ -147,7 +170,7 @@ export default function ProductTable({ products }: Props) {
                 </ProductTextArea>
               </ProductCell>
 
-              <DataText title={product.brands?.[0]?.brand_name}>{product.brands?.[0]?.brand_name ?? "-"}</DataText>
+              <DataText title={getBrandName(product.brands)}>{getBrandName(product.brands)}</DataText>
 
               <DataText>{product.created_at.slice(0, 10)}</DataText>
 
@@ -173,7 +196,7 @@ export default function ProductTable({ products }: Props) {
       </ProductContent>
 
       <BottomActions>
-        <ExportButton type="button" variant="outlined">
+        <ExportButton type="button" variant="outlined" onClick={handleExport}>
           전체 목록 내보내기
         </ExportButton>
 
@@ -186,6 +209,8 @@ export default function ProductTable({ products }: Props) {
         <ActionMenuItem onClick={handleEdit}>수정</ActionMenuItem>
         <ActionMenuItem onClick={handleDelete}>삭제</ActionMenuItem>
       </ActionMenu>
+
+      <AlertDialog open={exportError !== ""} title="내보내기 실패" message={exportError} onClose={() => setExportError("")} />
     </ProductPage>
   );
 }
@@ -219,11 +244,13 @@ const SearchArea = styled(Box)({ width: "100%", marginTop: "30px" });
 
 const ProductTableArea = styled(Box)({ width: "100%" });
 
+// 제목 줄도 행(TableRow)과 같은 좌우 여백(20px)을 줘서 열 위치를 맞춤
 const TableHeader = styled(Box)(({ theme }) => ({
   display: "grid",
   gridTemplateColumns: TABLE_COLUMNS,
   alignItems: "center",
   width: "100%",
+  padding: "0 20px",
   boxSizing: "border-box",
   borderBottom: `1px solid ${theme.palette.divider}`,
 }));
@@ -236,7 +263,13 @@ const TableHeaderText = styled(Typography)(({ theme }) => ({
   lineHeight: 1,
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
-  padding: "20px 16px",
+  // 좌우 여백은 데이터 칸과 같게(왼쪽 0) 맞춤
+  padding: "20px 0.5rem 20px 0",
+
+  // No. 제목은 번호(RowNumber)와 같은 왼쪽 여백
+  "&:first-of-type": {
+    paddingLeft: "20px",
+  },
 }));
 
 const TableMenuHeader = styled(Box)({ width: "1.5rem" });
