@@ -47,6 +47,9 @@ interface MainProduct {
   switches: SwitchOption[];
 }
 
+// 제품 선택 후 바텀시트가 닫히기까지 기다리는 시간 (ms)
+const SHEET_CLOSE_DELAY = 300;
+
 type Props = {
   children: React.ReactNode;
   products?: MainProduct[];
@@ -163,6 +166,20 @@ export default function MainLayout({
     setIsBottomSheetOpen(false);
   };
 
+  // 제품을 고르면 선택 표시(체크)가 보이도록 잠깐 뒤에 바텀시트 닫기
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const closeBottomSheetAfterSelect = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => setIsBottomSheetOpen(false), SHEET_CLOSE_DELAY);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
+
   // 찜하기 토글: 로그인 안 되어있으면 로그인 페이지로 이동, 되어있으면 DB에 반영
   const handleLikeChange = async (product: MainProduct, liked: boolean) => {
     if (!currentUserId) {
@@ -217,8 +234,10 @@ export default function MainLayout({
     showLike: true,
     checked: selectedProduct?.product_id === product.product_id,
     defaultLiked: likedIds.has(product.product_id),
-    onCheckChange: () => {
+    onCheckChange: (checked: boolean) => {
       setSelectedProduct(product);
+      // 새로 선택한 경우에만 닫음 (이미 선택된 제품을 다시 누르면 그대로)
+      if (checked) closeBottomSheetAfterSelect();
     },
     onLikeChange: (liked: boolean) => handleLikeChange(product, liked),
   }));
@@ -238,7 +257,6 @@ export default function MainLayout({
           open={isBottomSheetOpen}
           onToggle={handleToggleBottomSheet}
           onClose={handleCloseBottomSheet}
-          thumbnailSrc={selectedProduct?.image_url}
         >
           <ProductCarousel
             brandFilter={

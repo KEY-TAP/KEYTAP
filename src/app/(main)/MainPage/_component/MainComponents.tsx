@@ -375,6 +375,9 @@ export default function MainComponent({ products }: Props) {
 
         {/* 선택된 제품명 + 플레이 버튼 */}
         <AudioSection>
+          {/* 모바일: 선택한 제품 이미지 (PC·태블릿은 화면 키보드가 있어 표시 안 함) */}
+          {isMobile && selectedProduct?.image_url && <SelectedProductImage src={selectedProduct.image_url} alt={selectedProduct.product_name} />}
+
           <AudioButton
             type="button"
             onClick={toggleLongSound}
@@ -621,6 +624,16 @@ const AudioSection = styled(Box)(() => ({
   flexDirection: "column",
   alignItems: "center",
   marginTop: "6px",
+}));
+
+const SelectedProductImage = styled("img")(({ theme }) => ({
+  width: "100%",
+  maxWidth: "280px",
+  aspectRatio: "4 / 3",
+  objectFit: "cover",
+  borderRadius: "12px",
+  border: `1px solid ${alpha(theme.palette.common.black, 0.08)}`,
+  marginBottom: "16px",
 }));
 
 const AudioButton = styled("button", {
