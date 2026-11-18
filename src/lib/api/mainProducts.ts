@@ -34,6 +34,7 @@ export async function getMainProducts() {
       `
       ${PRODUCT_SELECT},
       fk_brand_id,
+      purchase_url,
       brands (
         brand_id,
         brand_name
@@ -79,6 +80,7 @@ export async function getMainProducts() {
       image_url: primaryImage?.image_url ?? null,
       brand_id: brand?.brand_id ?? null,
       brand_name: brand?.brand_name ?? null,
+      purchase_url: product.purchase_url ?? null,
       switches,
     };
   });

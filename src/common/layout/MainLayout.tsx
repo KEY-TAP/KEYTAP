@@ -19,6 +19,7 @@ import {
 
 // mui
 import { styled } from "@mui/material/styles";
+import { recordPurchaseClickClient } from "@/lib/api/purchaseClicksClient";
 
 interface Sound {
   sound_id: number;
@@ -42,6 +43,7 @@ interface MainProduct {
   image_url: string | null;
   brand_id?: number | null;
   brand_name?: string | null;
+  purchase_url?: string | null;
   switches: SwitchOption[];
 }
 
@@ -195,6 +197,15 @@ export default function MainLayout({
     }
   };
 
+  // '구매하러 가기' 클릭 기록 (새 탭 열기는 링크가 처리, 기록 실패해도 이동엔 영향 없게 에러는 무시)
+  const handlePurchaseClick = () => {
+    if (!selectedProduct) return;
+
+    const selectedSwitch = selectedProduct.switches.find((sw) => sw.switch_id === selectedSwitchId);
+
+    recordPurchaseClickClient(selectedProduct.product_id, selectedSwitch?.product_switch_id ?? null).catch(() => {});
+  };
+
   // 등록된 상품 → 캐러셀 아이템으로 매핑 (선택 시 타건음 재생용 상품으로 지정)
   const carouselItems: ProductCarouselItem[] = visibleProducts.map((product) => ({
     id: product.product_id,
@@ -240,6 +251,8 @@ export default function MainLayout({
                 : undefined
             }
             items={carouselItems}
+            purchaseUrl={selectedProduct?.purchase_url}
+            onPurchaseClick={handlePurchaseClick}
           />
         </BottomSheet>
       )}

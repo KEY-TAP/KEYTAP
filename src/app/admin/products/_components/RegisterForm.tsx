@@ -23,6 +23,7 @@ import {
 } from "@/lib/api/productsClients";
 import ImageUpload from "@/app/admin/products/_components/ImageUpload";
 import AlertDialog from "@/app/admin/_common/_components/AlertDialog";
+import { isValidPurchaseUrl, toPurchaseUrlValue } from "@/lib/purchaseUrl";
 
 interface Brand {
   brand_id: number;
@@ -46,6 +47,7 @@ export default function RegisterForm({ brands, switches }: Props) {
   const [productName, setProductName] = useState("");
   const [exProductName, setExProductName] = useState("");
   const [brandId, setBrandId] = useState<number | "">("");
+  const [purchaseUrl, setPurchaseUrl] = useState("");
   const [productType, setProductType] = useState("");
   const [description, setDescription] = useState("");
   const [selectedSwitchIds, setSelectedSwitchIds] = useState<number[]>([]);
@@ -67,6 +69,8 @@ export default function RegisterForm({ brands, switches }: Props) {
 
   const handleSubmit = async () => {
     if (!productName || !brandId) return;
+    // 구매 링크 형식이 잘못되면 저장하지 않음 (입력칸 아래 안내 표시 중)
+    if (!isValidPurchaseUrl(purchaseUrl)) return;
 
     setLoading(true);
 
@@ -77,6 +81,7 @@ export default function RegisterForm({ brands, switches }: Props) {
         product_type: productType.trim(),
         description: description.trim(),
         hashtags: hashTags.trim(),
+        purchase_url: toPurchaseUrlValue(purchaseUrl),
       });
 
       if (selectedSwitchIds.length > 0) {
@@ -171,6 +176,17 @@ export default function RegisterForm({ brands, switches }: Props) {
                 ))}
               </Select>
             </BrandFormControl>
+          </FieldRow>
+
+          <FieldRow>
+            <Label>구매 링크</Label>
+            <FormTextField
+              placeholder="https://로 시작하는 공식몰 상품 주소"
+              value={purchaseUrl}
+              onChange={(e) => setPurchaseUrl(e.target.value)}
+              error={!isValidPurchaseUrl(purchaseUrl)}
+              helperText={isValidPurchaseUrl(purchaseUrl) ? undefined : "https://로 시작하는 주소를 입력해주세요"}
+            />
           </FieldRow>
 
           <FieldRow>
