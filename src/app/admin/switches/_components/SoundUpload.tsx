@@ -12,6 +12,7 @@ import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import AlertDialog from "@/app/admin/_common/_components/AlertDialog";
+import { SOUND_TYPE_LABELS, type SoundType } from "@/types/sound";
 
 // 최대 사운드 용량 (1MB) - 단타음은 수십 KB, 10초 내외 연속음도 300KB 이하라 충분한 기준
 const MAX_SOUND_SIZE = 1024 * 1024;
@@ -21,7 +22,7 @@ const isMp3File = (file: File) => /\.mp3$/i.test(file.name);
 
 interface SoundFile {
   file: File;
-  soundType: "single" | "long";
+  soundType: SoundType;
 }
 
 interface ExistingSound {
@@ -91,7 +92,7 @@ export default function SoundUpload({ soundFiles, onChange, existingSounds = [],
     setCheckedIndexes([]);
   };
 
-  const handleTypeChange = (index: number, soundType: "single" | "long") => {
+  const handleTypeChange = (index: number, soundType: SoundType) => {
     const updated = soundFiles.map((sound, i) =>
       i === index
         ? {
@@ -109,7 +110,7 @@ export default function SoundUpload({ soundFiles, onChange, existingSounds = [],
       <UploadGuide variant="caption">
         MP3 형식의 사운드 파일을 최대 1MB까지 등록할 수 있습니다.
         <br />
-        사운드 유형을 Single 또는 Long으로 선택해주세요.
+        사운드 유형을 선택해주세요. (Spacebar: 스페이스바, Stabilizer: Enter·Backspace·Shift 공용)
       </UploadGuide>
 
       {existingSounds.length > 0 && (
@@ -123,7 +124,7 @@ export default function SoundUpload({ soundFiles, onChange, existingSounds = [],
                   <AudioPlayer controls src={sound.sound_url} />
 
                   <FileName variant="caption">
-                    {sound.sound_type === "long" ? "Long" : "Single"} 사운드
+                    {SOUND_TYPE_LABELS[sound.sound_type as SoundType] ?? sound.sound_type} 사운드
                   </FileName>
                 </PreviewCell>
 
@@ -195,12 +196,14 @@ export default function SoundUpload({ soundFiles, onChange, existingSounds = [],
                 <Select
                   value={sound.soundType}
                   onChange={(event) =>
-                    handleTypeChange(index, event.target.value as "single" | "long")
+                    handleTypeChange(index, event.target.value as SoundType)
                   }
                 >
-                  <MenuItem value="single">Single</MenuItem>
-
-                  <MenuItem value="long">Long</MenuItem>
+                  {Object.entries(SOUND_TYPE_LABELS).map(([value, label]) => (
+                    <MenuItem key={value} value={value}>
+                      {label}
+                    </MenuItem>
+                  ))}
                 </Select>
               </SoundTypeFormControl>
             </SoundRow>

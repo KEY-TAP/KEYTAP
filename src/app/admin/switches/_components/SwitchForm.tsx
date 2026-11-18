@@ -18,6 +18,7 @@ import {
   deleteSoundClient,
 } from "@/lib/api/switchesClient";
 import SoundUpload from "./SoundUpload";
+import type { SoundType } from "@/types/sound";
 
 interface Sound {
   sound_id: number;
@@ -39,7 +40,7 @@ interface Props {
 
 interface SoundFile {
   file: File;
-  soundType: "single" | "long";
+  soundType: SoundType;
 }
 
 export default function SwitchForm({ switchData }: Props) {
