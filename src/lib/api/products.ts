@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabaseServer";
 import { Brand, EditableProduct, ProductPayload } from "@/types/product";
+import { STORAGE_CACHE_CONTROL, createStorageFileName } from "@/lib/api/storageUpload";
 
 // 상품 목록 조회 (브랜드명 포함)
 export async function getProducts() {
@@ -63,9 +64,11 @@ export async function uploadProductImage(file: File, productId: number) {
   const supabase = await createClient();
 
   const fileExt = file.name.split(".").pop();
-  const filePath = `${productId}/${Date.now()}.${fileExt}`;
+  const filePath = `${productId}/${createStorageFileName(fileExt ?? "jpg")}`;
 
-  const { error: uploadError } = await supabase.storage.from("product-images").upload(filePath, file);
+  const { error: uploadError } = await supabase.storage.from("product-images").upload(filePath, file, {
+    cacheControl: STORAGE_CACHE_CONTROL,
+  });
 
   if (uploadError) throw new Error(uploadError.message);
 

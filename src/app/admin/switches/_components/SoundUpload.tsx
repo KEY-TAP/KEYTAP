@@ -11,6 +11,13 @@ import Checkbox from "@mui/material/Checkbox";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
+import AlertDialog from "@/app/admin/_common/_components/AlertDialog";
+
+// 최대 사운드 용량 (1MB) - 단타음은 수십 KB, 10초 내외 연속음도 300KB 이하라 충분한 기준
+const MAX_SOUND_SIZE = 1024 * 1024;
+
+// mp3 파일인지 확인 (파일 선택 창에서 '모든 파일'로 바꿔 고를 수 있어 확장자로 한 번 더 확인)
+const isMp3File = (file: File) => /\.mp3$/i.test(file.name);
 
 interface SoundFile {
   file: File;
@@ -36,15 +43,38 @@ export default function SoundUpload({ soundFiles, onChange, existingSounds = [],
   // 체크된 항목 인덱스 목록
   const [checkedIndexes, setCheckedIndexes] = useState<number[]>([]);
 
+  // 등록되지 않은 파일 안내 문구 (형식·용량 기준에 맞지 않는 파일)
+  const [rejectedMessage, setRejectedMessage] = useState("");
+
   const handleAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? []);
 
-    const newFiles: SoundFile[] = selected.map((file) => ({
-      file,
-      soundType: "single",
-    }));
+    const wrongTypeFiles = selected.filter((file) => !isMp3File(file));
+    const oversizedFiles = selected.filter((file) => isMp3File(file) && file.size > MAX_SOUND_SIZE);
+    const validFiles = selected.filter((file) => isMp3File(file) && file.size <= MAX_SOUND_SIZE);
 
-    onChange([...soundFiles, ...newFiles]);
+    if (validFiles.length > 0) {
+      const newFiles: SoundFile[] = validFiles.map((file) => ({
+        file,
+        soundType: "single",
+      }));
+
+      onChange([...soundFiles, ...newFiles]);
+    }
+
+    const messages: string[] = [];
+
+    if (wrongTypeFiles.length > 0) {
+      messages.push(`다음 파일은 MP3 형식이 아니라 등록되지 않았습니다.\n\n${wrongTypeFiles.map((file) => file.name).join("\n")}`);
+    }
+
+    if (oversizedFiles.length > 0) {
+      messages.push(`다음 사운드가 최대 용량(1MB)을 초과하여 등록되지 않았습니다.\n\n${oversizedFiles.map((file) => file.name).join("\n")}`);
+    }
+
+    if (messages.length > 0) {
+      setRejectedMessage(messages.join("\n\n"));
+    }
 
     e.target.value = "";
   };
@@ -77,7 +107,7 @@ export default function SoundUpload({ soundFiles, onChange, existingSounds = [],
   return (
     <SoundUploadWrap>
       <UploadGuide variant="caption">
-        MP3 형식의 사운드 파일을 등록할 수 있습니다.
+        MP3 형식의 사운드 파일을 최대 1MB까지 등록할 수 있습니다.
         <br />
         사운드 유형을 Single 또는 Long으로 선택해주세요.
       </UploadGuide>
@@ -177,6 +207,9 @@ export default function SoundUpload({ soundFiles, onChange, existingSounds = [],
           ))}
         </SoundList>
       )}
+
+      {/* 다이얼로그는 화면 위에 따로 띄워지므로 레이아웃에는 영향 없음 */}
+      <AlertDialog open={rejectedMessage !== ""} title="사운드 등록 실패" message={rejectedMessage} onClose={() => setRejectedMessage("")} />
     </SoundUploadWrap>
   );
 }
