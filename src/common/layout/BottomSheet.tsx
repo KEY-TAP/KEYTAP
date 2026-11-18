@@ -97,14 +97,17 @@ const ToggleButton = styled(IconButton)(({ theme }) => ({
   borderTopRightRadius: "10px",
   borderBottomLeftRadius: 0,
   borderBottomRightRadius: 0,
-  background: theme.palette.secondary.main,
-  boxShadow: "none",
+  // 푸터 색(secondary)과 겹치지 않도록 시트와 같은 흰색 탭으로 표시
+  background: theme.palette.common.white,
+  border: `1px solid ${theme.palette.divider}`,
+  borderBottom: "none",
+  boxShadow: `0 -6px 16px ${alpha(theme.palette.common.black, 0.1)}`,
 
   transition: "background-color .2s ease",
   // 호버는 마우스 환경에서만: 배경이 살짝 진해짐
   "@media (hover: hover)": {
     "&:hover": {
-      background: theme.palette.secondary.main,
+      background: theme.palette.common.white,
       backgroundImage: `linear-gradient(${alpha(theme.palette.primary.main, 0.08)}, ${alpha(theme.palette.primary.main, 0.08)})`,
     },
   },

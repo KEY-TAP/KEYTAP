@@ -8,36 +8,57 @@
 
 ## 👥 팀원 소개
 
-#### 🧑‍💻 수곤 (Frontend Developer)
+<table>
+  <thead>
+    <tr>
+      <th align="center">수곤</th>
+      <th align="center">윤희</th>
+      <th align="center">원지</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center">FrontEnd</td>
+      <td align="center">FrontEnd</td>
+      <td align="center">UI·UX Design</td>
+    </tr>
+    <tr>
+      <td align="center"><img src="https://github.com/sugonhwang.png" width="110" height="110" style="border-radius:50%;"></td>
+      <td align="center"><img src="https://github.com/YunheeAhn.png" width="110" height="110" style="border-radius:50%;"></td>
+      <td align="center"><img src="https://github.com/wonjiyang.png" width="110" height="110" style="border-radius:50%;"></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="https://github.com/sugonhwang">@sugonhwang</a></td>
+      <td align="center"><a href="https://github.com/YunheeAhn">@YunheeAhn</a></td>
+      <td align="center"><a href="https://github.com/wonjiyang">@wonjiyang</a></td>
+    </tr>
+    <tr>
+      <td align="left">
+        <ul>
+          <li>프론트엔드 개발</li>
+          <li>타건 사운드 재생 시스템 구축</li>
+          <li>Supabase API 연동 및 에러 핸들링</li>
+        </ul>
+      </td>
+      <td align="left">
+        <ul>
+          <li>프론트엔드 개발</li>
+          <li>반응형 UI 최적화</li>
+          <li>Supabase DB 최신화 작업</li>
+        </ul>
+      </td>
+      <td align="left">
+        <ul>
+          <li>UI·UX 디자인</li>
+          <li>랜딩 인터랙션 디자인</li>
+          <li>관리자 대시보드 화면 설계</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
-<img src="https://github.com/수곤_깃허브_아이디.png" width="100" height="100" style="border-radius: 50%; margin-bottom: 10px;">
-
-- **역할**: 프론트엔드 개발 / 타건 사운드 재생 시스템 구축 & Supabase API 연동 및 에러 핸들링
-- **개인 저장소**: [🔗 GitHub Repository](https://github.com/수곤_깃허브_아이디)
-
-#### 🧑‍💻 윤희 (Frontend Developer)
-
-<img src="https://github.com/윤희_깃허브_아이디.png" width="100" height="100" style="border-radius: 50%; margin-bottom: 10px;">
-
-- **역할**: 프론트엔드 개발 / 반응형 UI 최적화 & Supabase DB 최신화 작업
-- **개인 저장소**: [🔗 GitHub Repository](https://github.com/윤희_깃허브_아이디)
-
-#### 🎨 원지 (UI·UX Designer)
-
-<img src="https://github.com/원지_깃허브_아이디.png" width="100" height="100" style="border-radius: 50%; margin-bottom: 10px;">
-
-- **역할**: UI·UX 디자인 / 랜딩 인터랙션 디자인 & 관리자 대시보드 화면 설계
-- **개인 저장소**: [🔗 GitHub Repository](https://github.com/원지_깃허브_아이디)
-
-## 👥 팀원 소개
-
-|                                                   수곤                                                    |                                                   윤희                                                    |                                                   원지                                                    |
-| :-------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------: |
-|                                                 FrontEnd                                                  |                                                 FrontEnd                                                  |                                               UI·UX Design                                                |
-| <img src="https://github.com/수곤_깃허브_아이디.png" width="110" height="110" style="border-radius:50%;"> | <img src="https://github.com/윤희_깃허브_아이디.png" width="110" height="110" style="border-radius:50%;"> | <img src="https://github.com/원지_깃허브_아이디.png" width="110" height="110" style="border-radius:50%;"> |
-|                       [@수곤*깃허브*아이디](https://github.com/수곤_깃허브_아이디)                        |                       [@윤희*깃허브*아이디](https://github.com/윤희_깃허브_아이디)                        |                       [@원지*깃허브*아이디](https://github.com/원지_깃허브_아이디)                        |
-|                                                   팀원                                                    |                                                   팀원                                                    |                                                   팀원                                                    |
-
+<br>
 <br>
 
 ## 🚀 사업 모델 및 전략적 가치 (BM)

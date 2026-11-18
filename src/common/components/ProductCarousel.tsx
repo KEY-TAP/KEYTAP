@@ -172,7 +172,11 @@ const CarouselOuter = styled(Box)(({ theme }) => ({
 
   [theme.breakpoints.down("md")]: {},
 
-  [theme.breakpoints.down("sm")]: {},
+  // 모바일: 좌우 화살표가 카드와 겹치지 않도록 카드 영역 양옆에 여백
+  [theme.breakpoints.down("sm")]: {
+    width: "auto",
+    margin: "0 32px",
+  },
 }));
 
 const Viewport = styled("div")(() => ({
@@ -229,6 +233,7 @@ const ArrowButton = styled(IconButton, {
   },
 
   [theme.breakpoints.down("sm")]: {
+    [side]: "-6px",
     width: "36px",
     height: "36px",
 
@@ -248,6 +253,7 @@ const GotoButton = styled(Button)(({ theme }) => ({
   background: theme.palette.primary.main,
   borderRadius: "5px",
   marginLeft: "auto",
+  marginTop: "16px",
 
   transition: "color .3s ease",
   boxShadow: "none",
