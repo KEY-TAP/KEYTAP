@@ -3,6 +3,7 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { ProductPayload } from "@/types/product";
+import { STORAGE_CACHE_CONTROL, createStorageFileName } from "@/lib/api/storageUpload";
 
 // 상품 삭제
 export async function deleteProductClient(productId: number) {
@@ -27,9 +28,11 @@ export async function createProductClient(payload: ProductPayload) {
 // 이미지 Storage 업로드 후 DB에 URL 저장
 export async function uploadProductImageClient(file: File, productId: number, isPrimary: boolean = false) {
   const fileExt = file.name.split(".").pop();
-  const filePath = `${productId}/${Date.now()}.${fileExt}`;
+  const filePath = `${productId}/${createStorageFileName(fileExt ?? "jpg")}`;
 
-  const { error: uploadError } = await supabase.storage.from("product-images").upload(filePath, file);
+  const { error: uploadError } = await supabase.storage.from("product-images").upload(filePath, file, {
+    cacheControl: STORAGE_CACHE_CONTROL,
+  });
 
   if (uploadError) {
     throw new Error(uploadError.message);
