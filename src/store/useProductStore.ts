@@ -20,6 +20,8 @@ interface Product {
   product_name: string;
   hashtags?: string | null;
   image_url: string | null;
+  // 공식몰 구매 링크 (없으면 null → '구매하러 가기' 비활성)
+  purchase_url?: string | null;
   switches: SwitchOption[];
 }
 

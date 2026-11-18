@@ -23,6 +23,7 @@ import InputLabel from "@mui/material/InputLabel";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import { isValidPurchaseUrl, toPurchaseUrlValue } from "@/lib/purchaseUrl";
 
 interface Brand {
   brand_id: number;
@@ -47,6 +48,7 @@ interface Product {
   product_type: string | null;
   description: string | null;
   hashtags: string | null;
+  purchase_url: string | null;
   fk_brand_id: number;
   product_images: ExistingImage[] | null;
   switch_ids: number[];
@@ -66,6 +68,7 @@ export default function EditForm({ product, brands, switches }: Props) {
   const [productType, setProductType] = useState(product.product_type ?? "");
   const [description, setDescription] = useState(product.description ?? "");
   const [hashtags, setHashtags] = useState(product.hashtags ?? "");
+  const [purchaseUrl, setPurchaseUrl] = useState(product.purchase_url ?? "");
 
   const [selectedSwitchIds, setSelectedSwitchIds] = useState<number[]>(
     product.switch_ids ?? [],
@@ -88,6 +91,8 @@ export default function EditForm({ product, brands, switches }: Props) {
 
   const handleSubmit = async () => {
     if (!productName.trim() || !brandId) return;
+    // 구매 링크 형식이 잘못되면 저장하지 않음 (입력칸 아래 안내 표시 중)
+    if (!isValidPurchaseUrl(purchaseUrl)) return;
 
     setLoading(true);
     try {
@@ -97,6 +102,7 @@ export default function EditForm({ product, brands, switches }: Props) {
         product_type: productType.trim(),
         description: description.trim(),
         hashtags: hashtags.trim(),
+        purchase_url: toPurchaseUrlValue(purchaseUrl),
       });
 
       // 스위치는 전부 지우고 다시 만들지 않고 바뀐 것만 반영 (재생 기록·찜 스위치 유지)
@@ -170,6 +176,17 @@ export default function EditForm({ product, brands, switches }: Props) {
                 ))}
               </Select>
             </BrandFormControl>
+          </FieldRow>
+
+          <FieldRow>
+            <Label>구매 링크</Label>
+            <FormTextField
+              placeholder="https://로 시작하는 공식몰 상품 주소"
+              value={purchaseUrl}
+              onChange={(event) => setPurchaseUrl(event.target.value)}
+              error={!isValidPurchaseUrl(purchaseUrl)}
+              helperText={isValidPurchaseUrl(purchaseUrl) ? undefined : "https://로 시작하는 주소를 입력해주세요"}
+            />
           </FieldRow>
 
           <FieldRow>
