@@ -37,6 +37,10 @@ type ProductCarouselProps = {
   // 있으면 제목 자리에 브랜드 선택 드롭다운을 보여줌
   brandFilter?: BrandFilterProps;
   items: ProductCarouselItem[];
+  // 선택된 상품의 공식몰 구매 링크 (없으면 '구매하러 가기' 비활성)
+  purchaseUrl?: string | null;
+  // '구매하러 가기' 클릭 시 실행 (클릭 기록용)
+  onPurchaseClick?: () => void;
 };
 
 // 바텀시트에 들어가는 캐러셀
@@ -44,6 +48,8 @@ export default function ProductCarousel({
   title = "추천 상품",
   brandFilter,
   items,
+  purchaseUrl,
+  onPurchaseClick,
 }: ProductCarouselProps) {
   const [carouselRef, carouselApi] = useEmblaCarousel({
     loop: true,
@@ -123,9 +129,23 @@ export default function ProductCarousel({
         <ArrowRightIcon />
       </ArrowButton>
 
-      <GotoButton type="button" variant="contained" color="inherit">
-        <span>구매하러 가기</span>
-      </GotoButton>
+      {/* 구매 링크가 있으면 공식몰을 새 탭으로 열고, 없으면 비활성 */}
+      {purchaseUrl ? (
+        <GotoButton
+          href={purchaseUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="contained"
+          color="inherit"
+          onClick={onPurchaseClick}
+        >
+          <span>구매하러 가기</span>
+        </GotoButton>
+      ) : (
+        <GotoButton type="button" variant="contained" color="inherit" disabled>
+          <span>구매하러 가기</span>
+        </GotoButton>
+      )}
     </Wrap>
   );
 }
@@ -290,4 +310,14 @@ const GotoButton = styled(Button)(({ theme }) => ({
   "&:hover::before": {
     transform: "scaleX(1)",
   },
-}));
+
+  // 구매 링크가 없는 상품: theme의 비활성 색 사용
+  "&.Mui-disabled": {
+    borderColor: theme.palette.action.disabledBackground,
+    background: theme.palette.action.disabledBackground,
+  },
+
+  "&.Mui-disabled span": {
+    color: theme.palette.action.disabled,
+  },
+})) as typeof Button; // 링크(href)로 쓸 때 Button 타입 유지
