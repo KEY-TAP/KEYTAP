@@ -14,7 +14,6 @@ type BottomSheetProps = {
   onToggle: () => void;
   onClose: () => void;
   children?: React.ReactNode;
-  thumbnailSrc?: string | null;
 };
 
 export default function BottomSheet({
@@ -22,7 +21,6 @@ export default function BottomSheet({
   onToggle,
   onClose,
   children,
-  thumbnailSrc,
 }: BottomSheetProps) {
   // 한 번이라도 열어봤으면 화살표 움직임으로 알려주는 안내는 더 이상 안 보여줌
   const [hasOpened, setHasOpened] = useState(false);
@@ -38,8 +36,6 @@ export default function BottomSheet({
           onClick={onToggle}
           aria-label="바텀 시트 토글"
         >
-          {thumbnailSrc && <HandleThumbnail src={thumbnailSrc} alt="" />}
-
           <KeyboardIcon open={open ? 1 : 0} nudge={!open && !hasOpened}>
             <ArrowDropDownIcon />
           </KeyboardIcon>
@@ -117,19 +113,6 @@ const ToggleButton = styled(IconButton)(({ theme }) => ({
     height: "36px",
     top: "-36px",
     gap: "6px",
-  },
-}));
-
-const HandleThumbnail = styled("img")(({ theme }) => ({
-  width: "28px",
-  height: "28px",
-  borderRadius: "5px",
-  objectFit: "cover",
-  flexShrink: 0,
-
-  [theme.breakpoints.down("sm")]: {
-    width: "20px",
-    height: "20px",
   },
 }));
 

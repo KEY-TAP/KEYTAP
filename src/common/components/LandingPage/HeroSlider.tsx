@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
+import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 
 // mui
 import Tooltip from "@mui/material/Tooltip";
@@ -21,6 +23,9 @@ interface Props {
 
 // 다음 사진으로 넘어가는 간격
 const SLIDE_INTERVAL = 4000;
+
+// 이만큼(px) 이상 옆으로 밀면 다음/이전 사진으로 넘김
+const SWIPE_THRESHOLD = 40;
 
 // 움직임 줄이기 설정 구독 (설정이 바뀌면 바로 반영)
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
@@ -52,15 +57,38 @@ export default function HeroSlider({ images }: Props) {
     userPaused === null ? !prefersReducedMotion : !userPaused;
 
   // 자동 넘김 (멈춤 상태이거나 사진이 1장 이하면 동작 안 함)
+  // 직접 넘긴 경우(currentIndex 변경)에도 간격을 처음부터 다시 셈
   useEffect(() => {
     if (!isPlaying || images.length < 2) return;
 
-    const timer = setInterval(() => {
+    const timer = setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % images.length);
     }, SLIDE_INTERVAL);
 
-    return () => clearInterval(timer);
-  }, [isPlaying, images.length]);
+    return () => clearTimeout(timer);
+  }, [isPlaying, images.length, currentIndex]);
+
+  // 터치로 옆으로 밀어서 넘기기 (마우스 드래그는 제외)
+  const swipeStartX = useRef<number | null>(null);
+
+  const goPrev = () => setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+  const goNext = () => setCurrentIndex((prev) => (prev + 1) % images.length);
+
+  const handlePointerDown = (event: React.PointerEvent) => {
+    if (event.pointerType === "mouse") return;
+    swipeStartX.current = event.clientX;
+  };
+
+  const handlePointerUp = (event: React.PointerEvent) => {
+    if (swipeStartX.current === null) return;
+
+    const distance = event.clientX - swipeStartX.current;
+    swipeStartX.current = null;
+
+    if (images.length < 2 || Math.abs(distance) < SWIPE_THRESHOLD) return;
+    if (distance < 0) goNext();
+    else goPrev();
+  };
 
   if (images.length === 0) return null;
 
@@ -68,7 +96,12 @@ export default function HeroSlider({ images }: Props) {
 
   return (
     <SliderWrap role="region" aria-roledescription="carousel" aria-label="키보드 사진">
-      <SlideViewport aria-live={isPlaying ? "off" : "polite"}>
+      <SlideViewport
+        aria-live={isPlaying ? "off" : "polite"}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={() => (swipeStartX.current = null)}
+      >
         {images.map((image, index) => {
           const isActive = index === currentIndex;
 
@@ -96,20 +129,18 @@ export default function HeroSlider({ images }: Props) {
 
       {images.length > 1 && (
         <ControlRow>
-          <DotList>
-            {images.map((image, index) => (
-              <Tooltip key={image.src} title={`${index + 1}번째 사진 보기`}>
-                <DotButton
-                  type="button"
-                  aria-label={`${index + 1}번째 사진 보기`}
-                  aria-current={index === currentIndex}
-                  onClick={() => setCurrentIndex(index)}
-                >
-                  <span data-active={index === currentIndex} />
-                </DotButton>
-              </Tooltip>
-            ))}
-          </DotList>
+          {/* 이전·다음 버튼 + 현재 사진 번호 (< 1 / 4 >) */}
+          <Counter>
+            <ArrowButton type="button" aria-label="이전 사진 보기" onClick={goPrev}>
+              <ChevronLeftRoundedIcon />
+            </ArrowButton>
+            <CounterText aria-hidden="true">
+              <strong>{currentIndex + 1}</strong> / {images.length}
+            </CounterText>
+            <ArrowButton type="button" aria-label="다음 사진 보기" onClick={goNext}>
+              <ChevronRightRoundedIcon />
+            </ArrowButton>
+          </Counter>
 
           <Tooltip title={toggleLabel}>
             <ToggleButton
@@ -145,6 +176,8 @@ const SlideViewport = styled("div")(({ theme }) => ({
   border: `1px solid ${alpha(theme.palette.common.black, 0.08)}`,
   boxShadow: `0 4px 16px ${alpha(theme.palette.common.black, 0.06)}`,
   boxSizing: "border-box",
+  // 세로 스크롤은 그대로, 가로로 미는 동작만 넘김에 사용
+  touchAction: "pan-y",
 
   [theme.breakpoints.down("md")]: {
     aspectRatio: "auto",
@@ -177,38 +210,47 @@ const ControlRow = styled("div")(() => ({
   justifyContent: "space-between",
 }));
 
-const DotList = styled("div")(() => ({
+const Counter = styled("div")(() => ({
   display: "flex",
+  alignItems: "center",
 }));
 
-const DotButton = styled("button")(({ theme }) => ({
+const CounterText = styled("span")(({ theme }) => ({
+  minWidth: "48px",
+  textAlign: "center",
+  fontSize: "0.9375rem",
+  fontVariantNumeric: "tabular-nums",
+  color: theme.palette.text.secondary,
+
+  "& strong": {
+    fontWeight: 600,
+    color: theme.palette.text.primary,
+  },
+}));
+
+const ArrowButton = styled("button")(({ theme }) => ({
   width: "44px",
   height: "44px",
   padding: 0,
   border: 0,
+  borderRadius: "50%",
   background: "transparent",
+  color: theme.palette.text.primary,
   cursor: "pointer",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
+  transition: "background-color .3s ease",
 
-  "& span": {
-    width: "12px",
-    height: "12px",
-    borderRadius: "50%",
-    border: `2px solid ${theme.palette.primary.main}`,
-    background: "transparent",
-    transition: "background-color .3s ease",
-  },
-
-  "& span[data-active='true']": {
-    background: theme.palette.primary.main,
+  "@media (hover: hover)": {
+    "&:hover": {
+      background: theme.palette.secondary.main,
+    },
   },
 
   "&:focus-visible": {
     outline: `3px solid ${theme.palette.primary.main}`,
-    outlineOffset: "-6px",
-    borderRadius: "50%",
+    outlineOffset: "2px",
   },
 }));
 
