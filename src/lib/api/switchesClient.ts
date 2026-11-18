@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { STORAGE_CACHE_CONTROL, createStorageFileName } from "@/lib/api/storageUpload";
 
 // 스위치 등록
 export async function createSwitchClient(payload: { switch_name: string; switch_type: string; manufacture: string }) {
@@ -31,10 +32,13 @@ export async function deleteSwitchClient(switchId: number) {
 
 // 사운드 파일 Storage 업로드 후 DB에 저장
 export async function uploadSoundClient(file: File, switchId: number, soundType: "single" | "long") {
-  // 파일명 중복 방지를 위해 timestamp 사용
-  const filePath = `${switchId}/${Date.now()}_${file.name}`;
+  // 원본 파일명 대신 영문 파일 이름 사용 (mp3만 등록 가능)
+  const filePath = `${switchId}/${createStorageFileName("mp3")}`;
 
-  const { error: uploadError } = await supabase.storage.from("switch-sounds").upload(filePath, file);
+  const { error: uploadError } = await supabase.storage.from("switch-sounds").upload(filePath, file, {
+    cacheControl: STORAGE_CACHE_CONTROL,
+    contentType: "audio/mpeg",
+  });
 
   if (uploadError) throw new Error(uploadError.message);
 
