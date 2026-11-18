@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { deleteSwitchClient } from "@/lib/api/switchesClient";
 import SearchField from "../../_common/_components/SearchField";
+import AlertDialog from "../../_common/_components/AlertDialog";
+import { exportSwitches } from "./exportSwitches";
 
 // mui
 import { alpha, styled } from "@mui/material/styles";
@@ -46,6 +48,23 @@ export default function SwitchTable({ switches }: Props) {
 
   // 검색어 상태
   const [keyword, setKeyword] = useState("");
+
+  // 전체 목록 엑셀 내려받기 (연속 클릭 시 중복 실행 방지)
+  const isExportingRef = useRef(false);
+  const [exportError, setExportError] = useState("");
+
+  const handleExport = async () => {
+    if (isExportingRef.current) return;
+    isExportingRef.current = true;
+
+    try {
+      await exportSwitches(switches);
+    } catch {
+      setExportError("목록을 내보내지 못했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      isExportingRef.current = false;
+    }
+  };
 
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, id: number) => {
     setAnchorEl(e.currentTarget);
@@ -137,7 +156,9 @@ export default function SwitchTable({ switches }: Props) {
 
       {/* 하단 버튼 */}
       <BottomActions>
-        <ExportButton variant="outlined">전체 목록 내보내기</ExportButton>
+        <ExportButton variant="outlined" onClick={handleExport}>
+          전체 목록 내보내기
+        </ExportButton>
 
         <RegisterButton
           variant="contained"
@@ -166,6 +187,8 @@ export default function SwitchTable({ switches }: Props) {
 
         <ActionMenuItem onClick={handleDelete}>삭제</ActionMenuItem>
       </ActionMenu>
+
+      <AlertDialog open={exportError !== ""} title="내보내기 실패" message={exportError} onClose={() => setExportError("")} />
     </SwitchPage>
   );
 }
@@ -206,24 +229,32 @@ const SwitchTableArea = styled(Box)({
   width: "100%",
 });
 
+// 제목 줄도 행(TableRow)과 같은 좌우 여백(20px)을 줘서 열 위치를 맞춤
 const TableHeader = styled(Box)(({ theme }) => ({
   display: "grid",
   gridTemplateColumns: TABLE_COLUMNS,
   alignItems: "center",
   width: "100%",
+  padding: "0 20px",
   boxSizing: "border-box",
   borderBottom: `1px solid ${theme.palette.divider}`,
 }));
 
 const TableHeaderText = styled(Typography)(({ theme }) => ({
   overflow: "hidden",
-  padding: "20px 16px",
+  // 좌우 여백은 데이터 칸과 같게(왼쪽 0) 맞춤
+  padding: "20px 8px 20px 0",
   color: theme.palette.text.secondary,
   fontSize: "1rem",
   fontWeight: 300,
   lineHeight: 1,
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
+
+  // No. 제목은 번호(RowNumber)와 같은 왼쪽 여백
+  "&:first-of-type": {
+    paddingLeft: "20px",
+  },
 }));
 
 const TableMenuHeader = styled(Box)({
