@@ -245,24 +245,32 @@ const UserTableArea = styled(Box)({
   width: "100%",
 });
 
+// 제목 줄도 행(TableRow)과 같은 좌우 여백(20px)을 줘서 열 위치를 맞춤
 const TableHeader = styled(Box)(({ theme }) => ({
   display: "grid",
   gridTemplateColumns: TABLE_COLUMNS,
   alignItems: "center",
   width: "100%",
+  padding: "0 20px",
   boxSizing: "border-box",
   borderBottom: `1px solid ${theme.palette.divider}`,
 }));
 
 const TableHeaderText = styled(Typography)(({ theme }) => ({
   overflow: "hidden",
-  padding: "20px 16px",
+  // 좌우 여백은 데이터 칸과 같게(왼쪽 0) 맞춤
+  padding: "20px 8px 20px 0",
   color: theme.palette.text.secondary,
   fontSize: "1rem",
   fontWeight: 300,
   lineHeight: 1,
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
+
+  // No. 제목은 번호(RowNumber)와 같은 왼쪽 여백
+  "&:first-of-type": {
+    paddingLeft: "20px",
+  },
 }));
 
 const TableMenuHeader = styled(Box)({
