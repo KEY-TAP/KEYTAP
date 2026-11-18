@@ -19,6 +19,7 @@ import { useTheme } from "@mui/material/styles";
 import { KEYBOARD_ROWS } from "@/utils/keyRow";
 import { recordPlayClient } from "@/lib/api/playsClient";
 import { playKeySound, preloadKeySound, unlockKeySound } from "@/utils/keySound";
+import { KEY_SOUND_TYPES, findKeySound, getInputKeyCode } from "@/utils/keySoundType";
 import { KeyItem } from "@/types/keyboard.type";
 
 // 키보드로 조작하는 요소들: 여기에 포커스가 있을 땐 Enter/Space/방향키 등을 가로채지 않음
@@ -82,27 +83,26 @@ export default function MainComponent({ products }: Props) {
     setSelectedProduct(products[randomIndex]);
   }, [products]);
 
-  // single 사운드 재생 (키 누를 때마다)
-  const playSound = () => {
+  // 키 누를 때마다 타건음 재생 (Space·스테빌라이저 키는 전용 소리, 없으면 single)
+  const playSound = (code?: string) => {
     if (!isSoundOn) return;
     if (!selectedSwitch) return;
-    const singleSound = selectedSwitch.sounds.find((s) => s.sound_type === "single");
-    if (!singleSound) return;
+    const keySound = findKeySound(selectedSwitch.sounds, code);
+    if (!keySound) return;
 
     // 미리 받아둔 소리가 있으면 바로 재생 (모바일에서도 지연 없이 연타 가능)
-    if (playKeySound(singleSound.sound_url)) return;
+    if (playKeySound(keySound.sound_url)) return;
 
     // 아직 로드 전이거나 Web Audio를 못 쓰는 환경이면 기존 방식으로 재생
-    preloadKeySound(singleSound.sound_url);
-    const audio = new Audio(singleSound.sound_url);
+    preloadKeySound(keySound.sound_url);
+    const audio = new Audio(keySound.sound_url);
     audio.play().catch(() => {});
   };
 
-  // 선택한 제품의 모든 스위치 타건음을 미리 받아둠 (스위치를 바꿔도 바로 소리 나게)
+  // 선택한 제품의 모든 스위치 타건음(single·spacebar·stabilizer)을 미리 받아둠 (스위치를 바꿔도 바로 소리 나게)
   useEffect(() => {
     selectedProduct?.switches.forEach((sw) => {
-      const singleSound = sw.sounds.find((s) => s.sound_type === "single");
-      if (singleSound) preloadKeySound(singleSound.sound_url);
+      sw.sounds.filter((s) => KEY_SOUND_TYPES.includes(s.sound_type)).forEach((s) => preloadKeySound(s.sound_url));
     });
   }, [selectedProduct]);
 
@@ -210,7 +210,7 @@ export default function MainComponent({ products }: Props) {
     if (!e.metaKey) addPressedKey(e.code);
 
     // 키를 꾹 눌러서 반복될 땐 소리 안 내고 처음 눌렀을 때만 재생 (실제 키보드처럼)
-    if (!e.repeat) playSound();
+    if (!e.repeat) playSound(e.code);
 
     const input = desktopInputRef.current;
     if (!input) return;
@@ -267,7 +267,7 @@ export default function MainComponent({ products }: Props) {
     setIsInputFocused(true);
     if (!key.code) return;
     addPressedKey(key.code);
-    playSound();
+    playSound(key.code);
 
     if (key.code === "Backspace") {
       setTypedText((prev) => prev.slice(0, -1));
@@ -313,7 +313,7 @@ export default function MainComponent({ products }: Props) {
   const handleMobileInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setTypedText(e.target.value);
     // 모바일은 window keydown이 안 잡혀서 입력값이 바뀔 때 직접 소리 재생해줌
-    playSound();
+    playSound(getInputKeyCode(e.nativeEvent));
   };
 
   const handleDisplayFocus = () => {
