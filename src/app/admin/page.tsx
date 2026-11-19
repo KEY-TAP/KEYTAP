@@ -2,10 +2,6 @@ import { createClient } from "@/lib/supabaseServer";
 
 import DashboardLayout from "./_components/DashboardLayout";
 
-interface PlayRow {
-  played_at: string | null;
-}
-
 interface LikeRow {
   fk_product_id: number;
   products: {
@@ -18,6 +14,35 @@ interface LikeRow {
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+// Supabase는 한 번에 최대 1,000행만 돌려줘서 나눠서 끝까지 조회
+const PAGE_SIZE = 1000;
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * 전체 찜 기록 조회 (인기 제품 집계용)
+ * 1,000행씩 나눠서 마지막까지 가져옴
+ */
+async function fetchAllLikes(supabase: SupabaseServerClient) {
+  const rows: LikeRow[] = [];
+
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("user_product_likes")
+      .select("fk_product_id, products(product_name, brands(brand_name))")
+      .order("id", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error) return { data: null, error };
+
+    rows.push(...(data as unknown as LikeRow[]));
+
+    if (data.length < PAGE_SIZE) break;
+  }
+
+  return { data: rows, error: null };
+}
 
 /**
  * 한국 시간 기준 오늘 00:00을 UTC Date 객체로 반환
@@ -67,12 +92,14 @@ export default async function AdminHome() {
 
   const todayStartISO = todayStart.toISOString();
   const tomorrowStartISO = tomorrowStart.toISOString();
-  const sevenDaysStartISO = sevenDaysStart.toISOString();
+
+  // 최근 7일 각 날짜의 시작 시각 (한국 시간 00:00)
+  const dayStarts = Array.from({ length: 7 }, (_, index) => new Date(sevenDaysStart.getTime() + ONE_DAY_MS * index));
 
   /**
    * 서로 의존하지 않는 Supabase 요청을 병렬로 실행
    */
-  const [todaySignupsResult, totalUsersResult, todayPlaysResult, playsResult, popularResult] =
+  const [todaySignupsResult, totalUsersResult, todayPlaysResult, dailyPlayResults, popularResult] =
     await Promise.all([
       // 오늘 가입자 수
       supabase
@@ -100,17 +127,22 @@ export default async function AdminHome() {
         .gte("played_at", todayStartISO)
         .lt("played_at", tomorrowStartISO),
 
-      // 최근 7일 재생 데이터
-      supabase
-        .from("user_plays")
-        .select("played_at")
-        .gte("played_at", sevenDaysStartISO)
-        .lt("played_at", tomorrowStartISO),
+      // 최근 7일 날짜별 재생 수 (기록을 받아오지 않고 개수만 세서 1,000행 제한 없음)
+      Promise.all(
+        dayStarts.map((dayStart) =>
+          supabase
+            .from("user_plays")
+            .select("*", {
+              count: "exact",
+              head: true,
+            })
+            .gte("played_at", dayStart.toISOString())
+            .lt("played_at", new Date(dayStart.getTime() + ONE_DAY_MS).toISOString()),
+        ),
+      ),
 
-      // 인기 제품
-      supabase
-        .from("user_product_likes")
-        .select("fk_product_id, products(product_name, brands(brand_name))"),
+      // 인기 제품 (전체 찜 기록)
+      fetchAllLikes(supabase),
     ]);
 
   /**
@@ -120,7 +152,7 @@ export default async function AdminHome() {
     todaySignupsResult.error ??
     totalUsersResult.error ??
     todayPlaysResult.error ??
-    playsResult.error ??
+    dailyPlayResults.find((result) => result.error)?.error ??
     popularResult.error;
 
   if (dashboardError) {
@@ -140,37 +172,11 @@ export default async function AdminHome() {
   const todayVisitors = 0;
 
   /**
-   * 최근 7일 재생 수 집계
+   * 최근 7일 재생 수 (날짜별 개수 조회 결과를 차트 데이터로 변환)
    */
-  const playsByDate: Record<string, number> = {};
-
-  // 최근 7일 날짜를 먼저 0으로 초기화
-  for (let index = 0; index < 7; index += 1) {
-    const currentDate = new Date(sevenDaysStart.getTime() + ONE_DAY_MS * index);
-
-    const dateLabel = getKstDateLabel(currentDate);
-
-    playsByDate[dateLabel] = 0;
-  }
-
-  // 실제 재생 데이터 집계
-  const playRows = (playsResult.data ?? []) as PlayRow[];
-
-  playRows.forEach(({ played_at }) => {
-    if (!played_at) {
-      return;
-    }
-
-    const dateLabel = getKstDateLabel(new Date(played_at));
-
-    if (dateLabel in playsByDate) {
-      playsByDate[dateLabel] += 1;
-    }
-  });
-
-  const chartData = Object.entries(playsByDate).map(([date, count]) => ({
-    date,
-    count,
+  const chartData = dayStarts.map((dayStart, index) => ({
+    date: getKstDateLabel(dayStart),
+    count: dailyPlayResults[index].count ?? 0,
   }));
 
   /**
@@ -185,7 +191,7 @@ export default async function AdminHome() {
     }
   > = {};
 
-  const popularRows = (popularResult.data ?? []) as unknown as LikeRow[];
+  const popularRows = popularResult.data ?? [];
 
   popularRows.forEach((row) => {
     const productId = String(row.fk_product_id);
