@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabaseServer";
+import { compareSwitches } from "@/utils/switchOrder";
 
 const PRODUCT_SELECT = `
   product_id,
@@ -70,7 +71,9 @@ export async function getMainProducts() {
           sounds: sw.sounds ?? [],
         };
       })
-      .filter((sw): sw is NonNullable<typeof sw> => sw !== null);
+      .filter((sw): sw is NonNullable<typeof sw> => sw !== null)
+      // 기본 스위치 맨 앞, 나머지 이름순
+      .sort(compareSwitches);
 
     return {
       product_id: product.product_id,
@@ -137,7 +140,9 @@ export async function getLikedProducts() {
             sounds: sw.sounds ?? [],
           };
         })
-        .filter((sw): sw is NonNullable<typeof sw> => sw !== null);
+        .filter((sw): sw is NonNullable<typeof sw> => sw !== null)
+        // 기본 스위치 맨 앞, 나머지 이름순
+        .sort(compareSwitches);
 
       return {
         product_id: product.product_id,
