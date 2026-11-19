@@ -1,7 +1,6 @@
 "use client";
 
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 
 interface StatCardProps {
@@ -32,7 +31,7 @@ export default function StatCard({ label, value, secondaryValue }: StatCardProps
   );
 }
 
-const CardContainer = styled(Box)(({ theme }) => ({
+const CardContainer = styled(Box)(() => ({
   width: "100%",
   padding: "0 20px 0 0",
   boxSizing: "border-box",

@@ -81,7 +81,7 @@ export default function MainComponent({ products }: Props) {
 
     const randomIndex = Math.floor(Math.random() * products.length);
     setSelectedProduct(products[randomIndex]);
-  }, [products]);
+  }, [products, selectedProduct, setSelectedProduct]);
 
   // 키 누를 때마다 타건음 재생 (Space·스테빌라이저 키는 전용 소리, 없으면 single)
   const playSound = (code?: string) => {
