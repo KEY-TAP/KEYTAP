@@ -55,8 +55,6 @@ export default function SignUpForm() {
     [formValues.agreeMarketing, formValues.agreePrivacy, formValues.agreeTerms],
   );
 
-  const comingSoon = () => alert("준비중입니다.");
-
   const handleChange =
     (name: keyof SignUpFormValues) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.type === "checkbox" ? e.target.checked : e.target.value;

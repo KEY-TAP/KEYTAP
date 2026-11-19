@@ -48,7 +48,6 @@ export default function RegisterForm({ brands, switches }: Props) {
   const [exProductName, setExProductName] = useState("");
   const [brandId, setBrandId] = useState<number | "">("");
   const [purchaseUrl, setPurchaseUrl] = useState("");
-  const [productType, setProductType] = useState("");
   const [description, setDescription] = useState("");
   const [selectedSwitchIds, setSelectedSwitchIds] = useState<number[]>([]);
   const [hashTags, setHashTags] = useState("");
@@ -78,7 +77,8 @@ export default function RegisterForm({ brands, switches }: Props) {
       const product = await createProductClient({
         product_name: productName.trim(),
         fk_brand_id: Number(brandId),
-        product_type: productType.trim(),
+        // 등록 화면에는 상품 유형 입력칸이 없어 빈 값으로 저장 (수정 화면에서 입력 가능)
+        product_type: "",
         description: description.trim(),
         hashtags: hashTags.trim(),
         purchase_url: toPurchaseUrlValue(purchaseUrl),
