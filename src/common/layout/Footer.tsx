@@ -13,8 +13,7 @@ import { styled } from "@mui/material/styles";
 import AlertDialog from "@/app/admin/_common/_components/AlertDialog";
 
 const GITHUB_URL = "https://github.com/KEY-TAP/KEYTAP";
-const NOTION_URL =
-  "https://star-celery-934.notion.site/Keytap-3017ec0bf68b80dcbe46ec71807d32b7?source=copy_link";
+const NOTION_URL = "https://star-celery-934.notion.site/Keytap-3017ec0bf68b80dcbe46ec71807d32b7?source=copy_link";
 
 export default function Footer() {
   // 인스타그램 계정 준비 전까지 "준비중입니다" 안내 모달만 노출
@@ -48,7 +47,7 @@ export default function Footer() {
             </li>
           </OwnerWrap>
 
-          <CopyWrap>Copyright© 2026 키탭&#40;주&#41; all rights reserved.</CopyWrap>
+          <CopyWrap>Copyright© 2026 Keytap All rights reserved.</CopyWrap>
         </LeftWrap>
 
         {/* 오른쪽 */}
@@ -71,11 +70,7 @@ export default function Footer() {
         </RightWrap>
       </FooterInner>
 
-      <AlertDialog
-        open={isComingSoonOpen}
-        message="준비중입니다."
-        onClose={() => setIsComingSoonOpen(false)}
-      />
+      <AlertDialog open={isComingSoonOpen} message="준비중입니다." onClose={() => setIsComingSoonOpen(false)} />
     </FooterWrap>
   );
 }
