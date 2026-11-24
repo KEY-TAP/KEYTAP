@@ -22,13 +22,13 @@
     "@tanstack/react-query": "^5.99.0",
     "embla-carousel-react": "^8.6.0",
     "gsap": "^3.14.2",
-    "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "next": "16.4.6",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
     "recharts": "^3.9.1",
     "server-only": "^0.0.1",
     "write-excel-file": "^4.1.1",
-    "zod": "^4.3.6",
+    "zod": "^4.6.7",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
@@ -37,7 +37,7 @@
     "@types/react-dom": "^19",
     "embla-carousel": "^8.6.0",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "16.4.6",
     "typescript": "^5"
   }
 }
