@@ -127,6 +127,7 @@ export async function getProductById(productId: number): Promise<EditableProduct
       description,
       hashtags,
       purchase_url,
+      source_text,
       fk_brand_id,
       brands (
         brand_name

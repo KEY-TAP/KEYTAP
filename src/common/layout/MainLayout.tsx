@@ -44,6 +44,7 @@ interface MainProduct {
   brand_id?: number | null;
   brand_name?: string | null;
   purchase_url?: string | null;
+  source_text?: string | null;
   switches: SwitchOption[];
 }
 

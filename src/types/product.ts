@@ -6,6 +6,8 @@ export interface ProductPayload {
   hashtags: string;
   // 공식몰 구매 링크 (없으면 null)
   purchase_url: string | null;
+  // 제품 사진·타건음 출처 (없으면 null)
+  source_text: string | null;
 }
 
 export interface Brand {
@@ -26,6 +28,7 @@ export interface EditableProduct {
   description: string | null;
   hashtags: string | null;
   purchase_url: string | null;
+  source_text: string | null;
   fk_brand_id: number;
   brands: {
     brand_name: string;

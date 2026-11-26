@@ -21,6 +21,7 @@ import { recordPlayClient } from "@/lib/api/playsClient";
 import { playKeySound, preloadKeySound, unlockKeySound } from "@/utils/keySound";
 import { KEY_SOUND_TYPES, findKeySound, getInputKeyCode } from "@/utils/keySoundType";
 import { KeyItem } from "@/types/keyboard.type";
+import SourceCredit from "@/common/components/SourceCredit";
 
 // 키보드로 조작하는 요소들: 여기에 포커스가 있을 땐 Enter/Space/방향키 등을 가로채지 않음
 const CONTROL_SELECTOR =
@@ -45,6 +46,7 @@ interface Product {
   product_id: number;
   product_name: string;
   image_url: string | null;
+  source_text?: string | null;
   switches: SwitchOption[];
 }
 
@@ -387,6 +389,9 @@ export default function MainComponent({ products }: Props) {
             <AudioTitle>{selectedProduct?.product_name ?? "모델을 선택해주세요"}</AudioTitle>
           </AudioButton>
 
+          {/* 제품 사진·타건음 출처 (출처가 없으면 표시 안 함) */}
+          <MainSourceCredit text={selectedProduct?.source_text} />
+
           {selectedProduct && selectedProduct.switches.length > 1 && (
             <SwitchPicker>
               {selectedProduct.switches.map((sw) => (
@@ -701,6 +706,10 @@ const AudioTitle = styled(Typography)(() => ({
   fontSize: "1.375rem",
   fontWeight: 800,
   lineHeight: 1,
+}));
+
+const MainSourceCredit = styled(SourceCredit)(() => ({
+  marginTop: "6px",
 }));
 
 const AudioDescription = styled(Typography)(({ theme }) => ({
