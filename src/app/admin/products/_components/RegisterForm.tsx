@@ -48,6 +48,7 @@ export default function RegisterForm({ brands, switches }: Props) {
   const [exProductName, setExProductName] = useState("");
   const [brandId, setBrandId] = useState<number | "">("");
   const [purchaseUrl, setPurchaseUrl] = useState("");
+  const [sourceText, setSourceText] = useState("");
   const [description, setDescription] = useState("");
   const [selectedSwitchIds, setSelectedSwitchIds] = useState<number[]>([]);
   const [hashTags, setHashTags] = useState("");
@@ -82,6 +83,8 @@ export default function RegisterForm({ brands, switches }: Props) {
         description: description.trim(),
         hashtags: hashTags.trim(),
         purchase_url: toPurchaseUrlValue(purchaseUrl),
+        // 출처는 비워 두면 null (출처 줄 미표시)
+        source_text: sourceText.trim() || null,
       });
 
       if (selectedSwitchIds.length > 0) {
@@ -176,6 +179,16 @@ export default function RegisterForm({ brands, switches }: Props) {
                 ))}
               </Select>
             </BrandFormControl>
+          </FieldRow>
+
+          <FieldRow>
+            <Label>출처</Label>
+            <FormTextField
+              placeholder="예) YouTube 판교 뚜벅쵸 (없으면 비워두세요)"
+              value={sourceText}
+              onChange={(e) => setSourceText(e.target.value)}
+              helperText="사진·타건음을 외부에서 받은 경우 입력하면 메인·비교 화면에 '출처 | 입력한 내용'으로 표시됩니다"
+            />
           </FieldRow>
 
           <FieldRow>

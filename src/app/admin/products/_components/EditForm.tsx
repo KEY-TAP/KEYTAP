@@ -49,6 +49,7 @@ interface Product {
   description: string | null;
   hashtags: string | null;
   purchase_url: string | null;
+  source_text: string | null;
   fk_brand_id: number;
   product_images: ExistingImage[] | null;
   switch_ids: number[];
@@ -69,6 +70,7 @@ export default function EditForm({ product, brands, switches }: Props) {
   const [description, setDescription] = useState(product.description ?? "");
   const [hashtags, setHashtags] = useState(product.hashtags ?? "");
   const [purchaseUrl, setPurchaseUrl] = useState(product.purchase_url ?? "");
+  const [sourceText, setSourceText] = useState(product.source_text ?? "");
 
   const [selectedSwitchIds, setSelectedSwitchIds] = useState<number[]>(
     product.switch_ids ?? [],
@@ -103,6 +105,8 @@ export default function EditForm({ product, brands, switches }: Props) {
         description: description.trim(),
         hashtags: hashtags.trim(),
         purchase_url: toPurchaseUrlValue(purchaseUrl),
+        // 출처는 비워 두면 null (출처 줄 미표시)
+        source_text: sourceText.trim() || null,
       });
 
       // 스위치는 전부 지우고 다시 만들지 않고 바뀐 것만 반영 (재생 기록·찜 스위치 유지)
@@ -176,6 +180,16 @@ export default function EditForm({ product, brands, switches }: Props) {
                 ))}
               </Select>
             </BrandFormControl>
+          </FieldRow>
+
+          <FieldRow>
+            <Label>출처</Label>
+            <FormTextField
+              placeholder="예) YouTube 판교 뚜벅쵸 (없으면 비워두세요)"
+              value={sourceText}
+              onChange={(e) => setSourceText(e.target.value)}
+              helperText="사진·타건음을 외부에서 받은 경우 입력하면 메인·비교 화면에 '출처 | 입력한 내용'으로 표시됩니다"
+            />
           </FieldRow>
 
           <FieldRow>

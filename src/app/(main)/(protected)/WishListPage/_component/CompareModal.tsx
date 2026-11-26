@@ -17,11 +17,15 @@ import Typography from "@mui/material/Typography";
 import CloseIcon from "@mui/icons-material/Close";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
+import SourceCredit from "@/common/components/SourceCredit";
+
 export type CompareProduct = {
   id: number;
   title: string;
   imageSrc?: string;
   description?: string | null;
+  // 제품 사진·타건음 출처 (없으면 표시 안 함)
+  sourceText?: string | null;
   soundLabel: string;
   soundUrl?: string;
 };
@@ -96,6 +100,9 @@ export default function CompareModal({
     .map((id) => options.find((option) => option.id === id))
     .filter(Boolean) as CompareProduct[];
 
+  // 비교 중인 제품 중 하나라도 출처가 있으면, 출처가 없는 칸도 같은 높이를 비워 둬서 칸끼리 줄을 맞춤
+  const hasAnySource = selectedItems.some((item) => item.sourceText?.trim());
+
   return (
     <Modal
       open={open}
@@ -156,6 +163,10 @@ export default function CompareModal({
                       />
                       <span>{item.soundLabel}</span>
                     </SoundButton>
+
+                    {hasAnySource && (
+                      <CompareSourceCredit text={item.sourceText} reserveSpace />
+                    )}
 
                     {item.description && (
                       <>
@@ -382,6 +393,14 @@ const SoundButton = styled("button")(({ theme }) => ({
     "& .MuiSvgIcon-root": {
       fontSize: "18px",
     },
+  },
+}));
+
+const CompareSourceCredit = styled(SourceCredit)(({ theme }) => ({
+  marginTop: "10px",
+
+  [theme.breakpoints.down("sm")]: {
+    marginTop: "8px",
   },
 }));
 

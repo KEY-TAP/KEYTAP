@@ -22,6 +22,8 @@ interface Product {
   image_url: string | null;
   // 공식몰 구매 링크 (없으면 null → '구매하러 가기' 비활성)
   purchase_url?: string | null;
+  // 제품 사진·타건음 출처 (없으면 null → 출처 줄 미표시)
+  source_text?: string | null;
   switches: SwitchOption[];
 }
 
