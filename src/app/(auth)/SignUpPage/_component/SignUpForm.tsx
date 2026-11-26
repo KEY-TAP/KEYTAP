@@ -204,7 +204,8 @@ export default function SignUpForm() {
       }
 
       alert("회원가입이 완료되었습니다.");
-      router.push("/MainPage");
+      // 페이지를 새로 불러오며 이동 (로그인 쿠키가 반영된 상태로 서버가 다시 그림)
+      window.location.replace("/MainPage");
     } catch (error) {
       const message = error instanceof Error ? error.message : "회원가입 중 오류가 발생했습니다.";
 
@@ -216,7 +217,8 @@ export default function SignUpForm() {
     <Wrap aria-label="회원가입 폼">
       <Title variant="h2">회원가입</Title>
 
-      <Form onSubmit={onSubmit}>
+      {/* method="post": 페이지 준비 전에 제출돼도 입력값이 주소창(GET)에 붙지 않도록 */}
+      <Form method="post" onSubmit={onSubmit}>
         {/* 아이디 */}
         <Field>
           <Label htmlFor="signup-email">아이디</Label>
