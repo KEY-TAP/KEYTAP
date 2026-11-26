@@ -140,7 +140,8 @@ export default function LoginForm() {
         !redirectTo.startsWith("//") &&
         !redirectTo.startsWith("/\\");
 
-      router.push(isSafeRedirect ? redirectTo : "/MainPage");
+      // 페이지를 새로 불러오며 이동 (로그인 쿠키가 반영된 상태로 서버가 다시 그림, 개발 모드 이동 멈춤 방지)
+      window.location.replace(isSafeRedirect ? redirectTo : "/MainPage");
     } catch (error) {
       const message =
         error instanceof Error
@@ -155,7 +156,8 @@ export default function LoginForm() {
     <Wrap aria-label="로그인 폼">
       <Title variant="h2">로그인</Title>
 
-      <Form onSubmit={onSubmit}>
+      {/* method="post": 페이지 준비 전에 제출돼도 입력값이 주소창(GET)에 붙지 않도록 */}
+      <Form method="post" onSubmit={onSubmit}>
         {/* 이메일 */}
         <Field>
           <Label htmlFor="login-email">ID</Label>

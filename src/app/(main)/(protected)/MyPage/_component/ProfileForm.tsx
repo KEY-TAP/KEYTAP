@@ -282,7 +282,8 @@ function ProfileFormContent({ profile }: { profile: ProfileData }) {
         <TitleText variant="h2">프로필</TitleText>
       </TitleWrap>
 
-      <Form onSubmit={handleSubmit}>
+      {/* method="post": 페이지 준비 전에 제출돼도 입력값이 주소창(GET)에 붙지 않도록 */}
+      <Form method="post" onSubmit={handleSubmit}>
         <Field>
           <Label requiredMark htmlFor="profile-email">
             아이디

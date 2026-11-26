@@ -6,6 +6,7 @@ const PRODUCT_SELECT = `
   product_name,
   description,
   hashtags,
+  source_text,
   product_images (
     image_url,
     is_primary
@@ -84,6 +85,7 @@ export async function getMainProducts() {
       brand_id: brand?.brand_id ?? null,
       brand_name: brand?.brand_name ?? null,
       purchase_url: product.purchase_url ?? null,
+      source_text: product.source_text ?? null,
       switches,
     };
   });
@@ -150,6 +152,7 @@ export async function getLikedProducts() {
         description: product.description,
         hashtags: product.hashtags ?? null,
         image_url: primaryImage?.image_url ?? null,
+        source_text: product.source_text ?? null,
         switches,
         // 찜할 때 선택했던 스위치 (옛날 데이터는 null → 기본 스위치로 대체)
         liked_product_switch_id: row.fk_product_switch_id ?? null,

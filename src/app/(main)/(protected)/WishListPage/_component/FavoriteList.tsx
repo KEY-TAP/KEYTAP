@@ -38,6 +38,7 @@ interface LikedProduct {
   product_name: string;
   description: string | null;
   image_url: string | null;
+  source_text?: string | null;
   switches: SwitchOption[];
   liked_product_switch_id?: number | null;
 }
@@ -88,6 +89,7 @@ export default function FavoriteList({ products }: Props) {
             : product.product_name,
           imageSrc: product.image_url ?? undefined,
           description: product.description,
+          sourceText: product.source_text ?? null,
           soundLabel: likedSwitch
             ? `${likedSwitch.switch_name} 타건음 듣기`
             : "등록된 타건음 없음",
