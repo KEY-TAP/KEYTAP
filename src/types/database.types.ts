@@ -19,16 +19,19 @@ export type Database = {
           brand_id: number
           brand_name: string
           created_at: string
+          image_url: string | null
         }
         Insert: {
           brand_id?: number
           brand_name: string
           created_at?: string
+          image_url?: string | null
         }
         Update: {
           brand_id?: number
           brand_name?: string
           created_at?: string
+          image_url?: string | null
         }
         Relationships: []
       }
