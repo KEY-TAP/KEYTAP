@@ -9,6 +9,7 @@ import ProductCarousel, {
   type ProductCarouselItem,
 } from "../components/ProductCarousel";
 import { useProductStore } from "@/store/useProductStore";
+import { useBottomSheetStore } from "@/store/useBottomSheetStore";
 import { parseHashtags } from "@/utils/hashtags";
 import {
   getCurrentUserId,
@@ -67,7 +68,14 @@ export default function MainLayout({
 
   // 바텀시트는 MainPage에서만 보여줌 (찜목록, 마이페이지 등에선 숨김)
   const isMainPage = pathname === "/MainPage";
-  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+  // 열림 상태는 메인 정보 아래 More 버튼에서도 열 수 있도록 store로 공유
+  const isBottomSheetOpen = useBottomSheetStore((state) => state.isOpen);
+  const setBottomSheetOpen = useBottomSheetStore((state) => state.setOpen);
+  const toggleBottomSheet = useBottomSheetStore((state) => state.toggle);
+  // 정보 아래 More가 보이지 않을 때만(false) 떠 있는 More 표시
+  const inlineMoreVisible = useBottomSheetStore(
+    (state) => state.inlineMoreVisible,
+  );
   const { selectedProduct, selectedSwitchId, setSelectedProduct } =
     useProductStore();
 
@@ -117,13 +125,13 @@ export default function MainLayout({
       const brandId = Number(brandParam);
       if (products.some((product) => product.brand_id === brandId)) {
         setSelectedBrandId(brandId);
-        setIsBottomSheetOpen(true);
+        setBottomSheetOpen(true);
       }
 
       // 새로고침해도 다시 적용되지 않도록 주소에서 brand 값 제거
       window.history.replaceState(null, "", pathname);
     },
-    [products, pathname],
+    [products, pathname, setBottomSheetOpen],
   );
 
   // 이전 선택 상태 (같은 상품 안에서 스위치만 바뀐 건지 구분하려고 저장)
@@ -160,11 +168,11 @@ export default function MainLayout({
   }, [selectedProduct, selectedSwitchId, currentUserId, likedIds]);
 
   const handleToggleBottomSheet = () => {
-    setIsBottomSheetOpen((prev) => !prev);
+    toggleBottomSheet();
   };
 
   const handleCloseBottomSheet = () => {
-    setIsBottomSheetOpen(false);
+    setBottomSheetOpen(false);
   };
 
   // 제품을 고르면 선택 표시(체크)가 보이도록 잠깐 뒤에 바텀시트 닫기
@@ -172,7 +180,7 @@ export default function MainLayout({
 
   const closeBottomSheetAfterSelect = () => {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-    closeTimerRef.current = setTimeout(() => setIsBottomSheetOpen(false), SHEET_CLOSE_DELAY);
+    closeTimerRef.current = setTimeout(() => setBottomSheetOpen(false), SHEET_CLOSE_DELAY);
   };
 
   useEffect(() => {
@@ -258,6 +266,7 @@ export default function MainLayout({
           open={isBottomSheetOpen}
           onToggle={handleToggleBottomSheet}
           onClose={handleCloseBottomSheet}
+          showFloatingMore={inlineMoreVisible === false}
         >
           <ProductCarousel
             brandFilter={
