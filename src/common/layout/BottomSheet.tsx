@@ -1,18 +1,20 @@
 // 하단 바텀 시트
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 
 // mui
 import { styled, alpha } from "@mui/material/styles";
 import Box from "@mui/material/Box";
-import IconButton from "@mui/material/IconButton";
-import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+
+import MoreButton, { PillButton } from "../components/MoreButton";
 
 type BottomSheetProps = {
   open: boolean;
   onToggle: () => void;
   onClose: () => void;
+  // 닫혀 있을 때 오른쪽 아래 More 버튼을 보여줄지 (제품 정보 아래 More가 보이면 false)
+  showFloatingMore?: boolean;
   children?: React.ReactNode;
 };
 
@@ -20,26 +22,31 @@ export default function BottomSheet({
   open,
   onToggle,
   onClose,
+  showFloatingMore = false,
   children,
 }: BottomSheetProps) {
-  // 한 번이라도 열어봤으면 화살표 움직임으로 알려주는 안내는 더 이상 안 보여줌
-  const [hasOpened, setHasOpened] = useState(false);
-  if (open && !hasOpened) setHasOpened(true);
-
   return (
     <>
       <Dimmed open={open ? 1 : 0} onClick={onClose} />
 
+      {/* 닫혀 있을 때: 오른쪽 아래 More 버튼 (가운데 정보 글자를 가리지 않도록) */}
+      <MoreButton
+        variant="floating"
+        onClick={onToggle}
+        expanded={open}
+        hidden={open || !showFloatingMore}
+      />
+
       <SheetWrap open={open ? 1 : 0}>
-        <ToggleButton
+        {/* 열려 있을 때만 보이는 Close 버튼 */}
+        <CloseButton
           type="button"
-          onClick={onToggle}
-          aria-label="바텀 시트 토글"
+          onClick={onClose}
+          aria-label="Close, 다른 키보드 목록 닫기"
+          open={open ? 1 : 0}
         >
-          <KeyboardIcon open={open ? 1 : 0} nudge={!open && !hasOpened}>
-            <ArrowDropDownIcon />
-          </KeyboardIcon>
-        </ToggleButton>
+          Close
+        </CloseButton>
 
         <SheetContent>{children}</SheetContent>
       </SheetWrap>
@@ -78,71 +85,23 @@ const SheetWrap = styled("section", {
   boxShadow: "0 -10px 30px rgba(0,0,0,0.18)",
 }));
 
-const ToggleButton = styled(IconButton)(({ theme }) => ({
+// 열려 있을 때 시트 위 가운데에 보이는 Close 버튼 (More와 같은 모양)
+const CloseButton = styled(PillButton, {
+  shouldForwardProp: (prop) => prop !== "open",
+})<{ open?: number }>(({ theme, open }) => ({
   position: "absolute",
-  top: "-48px",
+  top: "-64px",
   left: "50%",
   transform: "translateX(-50%)",
-  width: "202px",
-  height: "48px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: "8px",
-  borderTopLeftRadius: "10px",
-  borderTopRightRadius: "10px",
-  borderBottomLeftRadius: 0,
-  borderBottomRightRadius: 0,
-  // 푸터 색(secondary)과 겹치지 않도록 시트와 같은 흰색 탭으로 표시
-  background: theme.palette.common.white,
-  border: `1px solid ${theme.palette.divider}`,
-  borderBottom: "none",
-  boxShadow: `0 -6px 16px ${alpha(theme.palette.common.black, 0.1)}`,
+  boxShadow: `0 8px 20px ${alpha(theme.palette.common.black, 0.12)}`,
 
-  transition: "background-color .2s ease",
-  // 호버는 마우스 환경에서만: 배경이 살짝 진해짐
-  "@media (hover: hover)": {
-    "&:hover": {
-      background: theme.palette.common.white,
-      backgroundImage: `linear-gradient(${alpha(theme.palette.primary.main, 0.08)}, ${alpha(theme.palette.primary.main, 0.08)})`,
-    },
-  },
+  // 닫혀 있을 땐 숨김 (닫힌 상태는 More 버튼이 대신함)
+  opacity: open ? 1 : 0,
+  visibility: open ? "visible" : "hidden",
+  pointerEvents: open ? "auto" : "none",
 
   [theme.breakpoints.down("sm")]: {
-    width: "120px",
-    height: "36px",
-    top: "-36px",
-    gap: "6px",
-  },
-}));
-
-const KeyboardIcon = styled(Box, {
-  shouldForwardProp: (prop) => prop !== "open" && prop !== "nudge",
-})<{ open?: number; nudge?: boolean }>(({ theme, open, nudge }) => ({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  color: theme.palette.common.black,
-  // 시트가 내려가 있을 땐 ▲(올리기), 올라와 있을 땐 ▼(내리기)
-  transform: open ? "rotate(0deg)" : "rotate(180deg)",
-  transition: "transform .3s ease",
-
-  "& svg": {
-    fontSize: "30px",
-    // 아직 안 열어본 동안만 화살표가 위로 살짝 움직임 (3번 반복 후 멈춤)
-    // 부모가 180도 돌아가 있어서 아래(+)로 움직이면 화면에서는 위로 보임
-    animation: nudge ? "sheetArrowNudge 2.4s ease-in-out 3" : "none",
-  },
-
-  "@keyframes sheetArrowNudge": {
-    "0%, 60%, 100%": { transform: "translateY(0)" },
-    "20%": { transform: "translateY(4px)" },
-    "40%": { transform: "translateY(0)" },
-    "50%": { transform: "translateY(2px)" },
-  },
-
-  "@media (prefers-reduced-motion: reduce)": {
-    "& svg": { animation: "none" },
+    top: "-56px",
   },
 }));
 
