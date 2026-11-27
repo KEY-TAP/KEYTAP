@@ -22,6 +22,8 @@ import { playKeySound, preloadKeySound, unlockKeySound } from "@/utils/keySound"
 import { KEY_SOUND_TYPES, findKeySound, getInputKeyCode } from "@/utils/keySoundType";
 import { KeyItem } from "@/types/keyboard.type";
 import SourceCredit from "@/common/components/SourceCredit";
+import MoreButton from "@/common/components/MoreButton";
+import { useBottomSheetStore } from "@/store/useBottomSheetStore";
 
 // 키보드로 조작하는 요소들: 여기에 포커스가 있을 땐 Enter/Space/방향키 등을 가로채지 않음
 const CONTROL_SELECTOR =
@@ -69,6 +71,31 @@ export default function MainComponent({ products }: Props) {
 
   // 전역 상태에서 선택된 제품 + 스위치 가져오기
   const { selectedProduct, selectedSwitchId, setSelectedProduct, setSelectedSwitchId } = useProductStore();
+
+  // 제품 정보 아래 More 버튼: 바텀시트 열기 + 화면에 보이는지 알려서 떠 있는 More를 숨김
+  const isSheetOpen = useBottomSheetStore((state) => state.isOpen);
+  const setSheetOpen = useBottomSheetStore((state) => state.setOpen);
+  const setInlineMoreVisible = useBottomSheetStore((state) => state.setInlineMoreVisible);
+  const inlineMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const target = inlineMoreRef.current;
+    if (!target) return;
+
+    // 제품 정보 아래 More가 화면 안에 다 보일 때만 떠 있는 More를 숨김
+    // (일부만 걸쳐 있을 땐 떠 있는 More를 그대로 둬서, 버튼이 하나도 안 보이는 상황을 막음)
+    const FULLY_VISIBLE = 0.99;
+    const observer = new IntersectionObserver(
+      ([entry]) => setInlineMoreVisible(entry.intersectionRatio >= FULLY_VISIBLE),
+      { threshold: [0, FULLY_VISIBLE] },
+    );
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+      setInlineMoreVisible(null);
+    };
+  }, [setInlineMoreVisible]);
 
   // 선택된 제품 안에서 실제로 사운드를 재생할 스위치
   const selectedSwitch = selectedProduct?.switches.find((sw) => sw.switch_id === selectedSwitchId) ?? selectedProduct?.switches[0] ?? null;
@@ -403,6 +430,11 @@ export default function MainComponent({ products }: Props) {
           )}
 
           <AudioDescription>미리 녹음된 타건음을 들으실 수 있습니다.</AudioDescription>
+
+          {/* 다른 키보드 목록(바텀시트) 열기 */}
+          <InlineMoreWrap ref={inlineMoreRef}>
+            <MoreButton variant="inline" onClick={() => setSheetOpen(true)} expanded={isSheetOpen} />
+          </InlineMoreWrap>
         </AudioSection>
       </Section>
     </Main>
@@ -710,6 +742,12 @@ const AudioTitle = styled(Typography)(() => ({
 
 const MainSourceCredit = styled(SourceCredit)(() => ({
   marginTop: "6px",
+}));
+
+const InlineMoreWrap = styled(Box)(() => ({
+  display: "flex",
+  justifyContent: "center",
+  marginTop: "20px",
 }));
 
 const AudioDescription = styled(Typography)(({ theme }) => ({
