@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { HEARING_ICON, PLAY_ICON } from "@/common/icons/icons";
+import { PLAY_ICON } from "@/common/icons/icons";
 import { useProductStore } from "@/store/useProductStore";
 import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
 import VolumeOffRoundedIcon from "@mui/icons-material/VolumeOffRounded";
@@ -356,11 +356,6 @@ export default function MainComponent({ products }: Props) {
     <Main>
       <Section>
         <TopRow>
-          <GuideRow>
-            <Image src={HEARING_ICON} alt="play icon" width={28} height={28} />
-            <GuideText>소리를 듣기 위해 영문키를 눌러주세요.</GuideText>
-          </GuideRow>
-
           <SoundToggleButton type="button" active={isSoundOn ? 1 : 0} onClick={handleToggleSound} aria-pressed={isSoundOn} aria-label={isSoundOn ? "사운드 끄기" : "사운드 켜기"}>
             {isSoundOn ? <VolumeUpRoundedIcon fontSize="small" /> : <VolumeOffRoundedIcon fontSize="small" />}
             <span>{isSoundOn ? "사운드 ON" : "사운드 OFF"}</span>
@@ -370,11 +365,11 @@ export default function MainComponent({ products }: Props) {
         <DisplayBox onClick={handleDisplayFocus} focused={isMobile && isInputFocused ? 1 : 0}>
           {isMobile ? (
             <DisplayText hasValue={!!typedText}>
-              {typedText || "입력한 영문 텍스트가 이곳에 표시 됩니다"}
+              {typedText || "입력한 텍스트가 이곳에 표시 됩니다"}
               {isInputFocused && <FakeCaret />}
             </DisplayText>
           ) : (
-            <DisplayTextarea ref={desktopInputRef} value={typedText} onChange={handleDesktopInputChange} onFocus={() => setIsInputFocused(true)} onBlur={() => setIsInputFocused(false)} placeholder="입력한 영문 텍스트가 이곳에 표시 됩니다" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} />
+            <DisplayTextarea ref={desktopInputRef} value={typedText} onChange={handleDesktopInputChange} onFocus={() => setIsInputFocused(true)} onBlur={() => setIsInputFocused(false)} placeholder="입력한 텍스트가 이곳에 표시 됩니다" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} />
           )}
         </DisplayBox>
 
@@ -453,19 +448,14 @@ const Section = styled(Box)(({ theme }) => ({
 const TopRow = styled(Box)(({ theme }) => ({
   display: "flex",
   alignItems: "center",
-  justifyContent: "space-between",
+  // 사운드 ON/OFF 버튼을 오른쪽에 둠
+  justifyContent: "flex-end",
   flexWrap: "wrap",
   gap: "12px",
   marginBottom: "26px",
   [theme.breakpoints.down("sm")]: {
     marginBottom: "20px",
   },
-}));
-
-const GuideRow = styled(Box)(() => ({
-  display: "flex",
-  alignItems: "center",
-  gap: "10px",
 }));
 
 const SoundToggleButton = styled("button", {
@@ -500,12 +490,6 @@ const SoundToggleButton = styled("button", {
 
     "& span": { display: "none" },
   },
-}));
-
-const GuideText = styled(Typography)(({ theme }) => ({
-  fontSize: "1rem",
-  fontWeight: 500,
-  color: theme.palette.text.primary,
 }));
 
 const DisplayBox = styled(Box, {
