@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import Button from "@mui/material/Button";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import HeroSlider, { type HeroImage } from "./HeroSlider";
 
 // mui
-import { styled } from "@mui/material/styles";
+import { styled, alpha } from "@mui/material/styles";
 
 export interface LandingBrand {
   brand_id: number;
   brand_name: string;
+  // 카드 오른쪽 위 배경 이미지 (없으면 글자만 표시)
+  image_url: string | null;
   product_count: number;
 }
 
@@ -70,6 +73,20 @@ const LandingPage = ({ heroImages, brands }: Props) => {
               <li key={brand.brand_id}>
                 {/* 해당 브랜드가 선택된 상태로 MainPage 열기 */}
                 <BrandCard href={`/MainPage?brand=${brand.brand_id}`}>
+                  {brand.image_url && (
+                    <>
+                      {/* 장식용 배경이라 화면 낭독기에서는 읽지 않음 (카드 이름은 브랜드명) */}
+                      <BrandImage aria-hidden="true">
+                        <Image
+                          src={brand.image_url}
+                          alt=""
+                          fill
+                          sizes="(max-width: 680px) 90vw, (max-width: 980px) 45vw, 20vw"
+                        />
+                      </BrandImage>
+                      <BrandImageFade aria-hidden="true" />
+                    </>
+                  )}
                   <BrandName>{brand.brand_name}</BrandName>
                   <BrandCount>등록 제품 {brand.product_count}개</BrandCount>
                 </BrandCard>
@@ -295,6 +312,8 @@ const BrandGrid = styled("ul")(({ theme }) => ({
 }));
 
 const BrandCard = styled(Link)(({ theme }) => ({
+  position: "relative",
+  overflow: "hidden",
   height: "100%",
   minHeight: "160px",
   padding: "24px",
@@ -303,8 +322,9 @@ const BrandCard = styled(Link)(({ theme }) => ({
   background: theme.palette.background.default,
   display: "flex",
   flexDirection: "column",
-  justifyContent: "space-between",
-  gap: "40px",
+  // 브랜드명은 카드 아래쪽, 등록 제품 수 바로 위에 둠 (위쪽은 배경 이미지 자리)
+  justifyContent: "flex-end",
+  gap: "6px",
   textDecoration: "none",
   color: theme.palette.text.primary,
   boxSizing: "border-box",
@@ -314,6 +334,13 @@ const BrandCard = styled(Link)(({ theme }) => ({
     borderColor: theme.palette.primary.main,
   },
 
+  // 마우스를 올리면 배경 이미지가 살짝 커짐
+  "@media (hover: hover)": {
+    "&:hover img": {
+      transform: "scale(1.05)",
+    },
+  },
+
   "&:focus-visible": {
     outline: `2px solid ${theme.palette.primary.main}`,
     outlineOffset: "2px",
@@ -321,15 +348,57 @@ const BrandCard = styled(Link)(({ theme }) => ({
 
   [theme.breakpoints.down("sm")]: {
     minHeight: "120px",
-    gap: "24px",
   },
 }));
 
+// 배경 이미지 영역: 카드 왼쪽 12%부터 오른쪽 끝, 위에서 72% 높이
+const BrandImage = styled("span")(() => ({
+  position: "absolute",
+  top: 0,
+  right: 0,
+  left: "12%",
+  height: "72%",
+
+  "& img": {
+    objectFit: "cover",
+    objectPosition: "60% 70%",
+    transformOrigin: "right top",
+    transition: "transform .3s ease-out",
+  },
+
+  "@media (prefers-reduced-motion: reduce)": {
+    "& img": { transition: "none" },
+  },
+}));
+
+// 이미지가 왼쪽·아래로 흰 배경에 자연스럽게 사라지게 해서 글자가 잘 읽히도록 함
+// (기존 카드 높이 160px 기준: 아래 42%까지는 흰색으로 덮어 브랜드명이 이미지 위에 겹치지 않게 함)
+const BrandImageFade = styled("span")(({ theme }) => {
+  const bg = theme.palette.background.default;
+
+  return {
+    position: "absolute",
+    inset: 0,
+    background: [
+      `linear-gradient(90deg, ${bg} 0%, ${bg} 12%, ${alpha(bg, 0.55)} 30%, ${alpha(bg, 0)} 50%)`,
+      `linear-gradient(0deg, ${bg} 0%, ${bg} 42%, ${alpha(bg, 0.6)} 52%, ${alpha(bg, 0)} 66%)`,
+    ].join(", "),
+  };
+});
+
 const BrandName = styled("span")(({ theme }) => ({
+  position: "relative",
   fontSize: "1.375rem",
   fontWeight: 700,
+  // 굵기는 그대로 두고 기울기만 추가
+  fontStyle: "italic",
   lineHeight: 1.25,
   color: theme.palette.text.primary,
+
+  // 4칸인데 카드 폭이 좁은 구간(980~1299px): 긴 브랜드명이 잘리지 않게 화면 폭에 맞춰 줄임
+  [theme.breakpoints.between("md", "lg")]: {
+    fontSize: "min(1.375rem, 1.75vw)",
+  },
 
   [theme.breakpoints.up("lg")]: {
     fontSize: "1.5rem",
@@ -345,6 +414,7 @@ const BrandName = styled("span")(({ theme }) => ({
 }));
 
 const BrandCount = styled("span")(({ theme }) => ({
+  position: "relative",
   fontSize: "0.875rem",
   lineHeight: 1.4,
   color: theme.palette.text.primary,

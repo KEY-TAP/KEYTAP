@@ -37,6 +37,7 @@ async function getLandingBrands(): Promise<LandingBrand[]> {
       .map((brand) => ({
         brand_id: brand.brand_id,
         brand_name: brand.brand_name,
+        image_url: brand.image_url ?? null,
         product_count: brand.products?.length ?? 0,
       }))
       .sort(
